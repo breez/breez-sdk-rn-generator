@@ -1,0 +1,212 @@
+use askama::Template;
+use serde::{Deserialize, Serialize};
+use uniffi_bindgen::interface::*;
+use uniffi_bindgen::*;
+
+pub use uniffi_bindgen::bindings::kotlin::gen_kotlin::*;
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct Config {
+    package_name: Option<String>,
+}
+
+impl Config {}
+
+impl BindingGeneratorConfig for Config {
+    fn get_entry_from_bindings_table(_bindings: &toml::value::Value) -> Option<toml::value::Value> {
+        if let Some(table) = _bindings.as_table() {
+            table.get("rn").map(|v| v.clone())
+        } else {
+            None
+        }
+    }
+
+    fn get_config_defaults(ci: &ComponentInterface) -> Vec<(String, toml::value::Value)> {
+        vec![
+            (
+                "package_name".to_string(),
+                toml::value::Value::String(ci.namespace().to_string()),
+            ),
+            (
+                "cdylib_name".to_string(),
+                toml::value::Value::String(ci.namespace().to_string()),
+            ),
+        ]
+    }
+}
+
+#[derive(Template)]
+#[template(syntax = "rn", escape = "none", path = "wrapper.kt")]
+pub struct RNWrapper<'a> {
+    config: Config,
+    ci: &'a ComponentInterface,
+}
+
+impl<'a> RNWrapper<'a> {
+    pub fn new(config: Config, ci: &'a ComponentInterface) -> Self {
+        Self { config, ci }
+    }
+}
+
+pub mod filters {
+    use heck::*;
+    use uniffi_bindgen::backend::{CodeType, TypeIdentifier};
+
+    use super::*;
+
+    fn oracle() -> &'static KotlinCodeOracle {
+        &KotlinCodeOracle
+    }
+
+    pub fn type_name(codetype: &impl CodeType) -> Result<String, askama::Error> {
+        Ok(codetype.type_label(oracle()))
+    }
+
+    pub fn render_to_map(
+        t: &TypeIdentifier,
+        ci: &ComponentInterface,
+        obj_name: &str,
+        field_name: &str,
+        optional: bool,
+    ) -> Result<String, askama::Error> {
+        let res: Result<String, askama::Error> = match t {
+            Type::UInt8 => Ok(format!("{obj_name}.{field_name}").into()),
+            Type::Int8 => Ok(format!("{obj_name}.{field_name}").into()),
+            Type::UInt16 => Ok(format!("{obj_name}.{field_name}").into()),
+            Type::Int16 => Ok(format!("{obj_name}.{field_name}").into()),
+            Type::UInt32 => Ok(format!("{obj_name}.{field_name}").into()),
+            Type::Int32 => Ok(format!("{obj_name}.{field_name}").into()),
+            Type::UInt64 => Ok(format!("{obj_name}.{field_name}").into()),
+            Type::Int64 => Ok(format!("{obj_name}.{field_name}").into()),
+            Type::Float32 => Ok(format!("{obj_name}.{field_name}").into()),
+            Type::Float64 => Ok(format!("{obj_name}.{field_name}").into()),
+            Type::Boolean => Ok(format!("{obj_name}.{field_name}").into()),
+            Type::String => Ok(format!("{obj_name}.{field_name}").into()),
+            Type::Timestamp => unimplemented!("render_to_map: Timestamp is not implemented"),
+            Type::Duration => unimplemented!("render_to_map: Duration is not implemented"),
+            Type::Object(_) => unimplemented!("render_to_map: Object is not implemented"),
+            Type::Record(_) => match optional {
+                true => Ok(format!("{obj_name}.{field_name}?.let {{ readableMapOf(it) }}").into()),
+                false => Ok(format!("readableMapOf({obj_name}.{field_name})").into()),
+            },
+            Type::Enum(inner) => {
+                let enum_def = ci.get_enum_definition(inner).unwrap();
+                match enum_def.is_flat() {
+                    true => match optional {
+                        true => Ok(format!(
+                            "{obj_name}.{field_name}?.let {{ it.name.lowercase() }}"
+                        )
+                        .into()),
+                        false => Ok(format!("{obj_name}.{field_name}.name.lowercase()").into()),
+                    },
+                    false => match optional {
+                        true => Ok(
+                            format!("{obj_name}.{field_name}?.let {{ readableMapOf(it) }}").into(),
+                        ),
+                        false => Ok(format!("readableMapOf({obj_name}.{field_name})").into()),
+                    },
+                }
+            }
+            Type::Error(_) => unimplemented!("render_to_map: Error is not implemented"),
+            Type::CallbackInterface(_) => {
+                unimplemented!("render_to_map: CallbackInterface is not implemented")
+            }
+            Type::Optional(inner) => {
+                let unboxed = inner.as_ref();
+                render_to_map(unboxed, ci, obj_name, field_name, true)
+            }
+            Type::Sequence(_) => match optional {
+                true => Ok(format!(
+                    "{obj_name}.{field_name}?.let {{ readableArrayOf(it) }}"
+                )),
+                false => Ok(format!("readableArrayOf({obj_name}.{field_name})")),
+            },
+            Type::Map(_, _) => unimplemented!("render_to_map: Map is not implemented"),
+            Type::External { .. } => {
+                unimplemented!("render_to_map: External is not implemented")
+            }
+            Type::Custom { .. } => {
+                unimplemented!("render_to_map: Custom is not implemented")
+            }
+            Type::Unresolved { .. } => {
+                unimplemented!("render_to_map: Unresolved is not implemented")
+            }
+        };
+        res
+    }
+
+    pub fn render_from_map(
+        t: &TypeIdentifier,
+        ci: &ComponentInterface,
+        name: &str,
+        optional: bool,
+    ) -> Result<String, askama::Error> {
+        let mut mandatory_suffix = "";
+        if !optional {
+            mandatory_suffix = "!!"
+        }
+        let res: String = match t {
+            Type::UInt8 => format!("data.getInt(\"{name}\").toUByte()").into(),
+            Type::Int8 => format!("data.getInt(\"{name}\").toByte()").into(),
+            Type::UInt16 => format!("data.getInt(\"{name}\").toUShort()").into(),
+            Type::Int16 => format!("data.getInt(\"{name}\").toShort()").into(),
+            Type::UInt32 => format!("data.getInt(\"{name}\").toUInt()").into(),
+            Type::Int32 => format!("data.getInt(\"{name}\")").into(),
+            Type::UInt64 => format!("data.getInt(\"{name}\").toULong()").into(),
+            Type::Int64 => format!("data.getInt(\"{name}\").toLong()").into(),
+            Type::Float32 => format!("data.getDouble(\"{name}\")").into(),
+            Type::Float64 => format!("data.getDouble(\"{name}\")").into(),
+            Type::Boolean => format!("data.getBoolean(\"{name}\")").into(),
+            Type::String => format!("data.getString(\"{name}\"){mandatory_suffix}").into(),
+            Type::Timestamp => "".into(),
+            Type::Duration => "".into(),
+            Type::Object(_) => "".into(),
+            Type::Record(_) => {
+                let record_type_name = type_name(t)?;
+                format!(
+                    "data.getMap(\"{name}\")?.let {{ as{record_type_name}(it)}}{mandatory_suffix}"
+                )
+                .into()
+            }
+            Type::Enum(inner) => {
+                let enum_def = ci.get_enum_definition(inner).unwrap();
+                match enum_def.is_flat() {
+                    false => {
+                        format!("data.getMap(\"{name}\")?.let {{ as{inner}(it)}}{mandatory_suffix}")
+                            .into()
+                    }
+                    true => format!(
+                        "data.getString(\"{name}\")?.let {{ as{inner}(it)}}{mandatory_suffix}"
+                    )
+                    .into(),
+                }
+            }
+            Type::Error(_) => "".into(),
+            Type::CallbackInterface(_) => "".into(),
+            Type::Optional(inner) => {
+                let unboxed = inner.as_ref();
+                let inner_res = render_from_map(unboxed, ci, name, true)?;
+                inner_res
+            }
+            Type::Sequence(inner) => {
+                let unboxed = inner.as_ref();
+                let element_type_name = type_name(unboxed)?;
+                format!("data.getArray(\"{name}\")?.let {{ as{element_type_name}List(it) }}{mandatory_suffix}")
+            }
+            Type::Map(_, _) => "".into(),
+            Type::External { .. } => "".into(),
+            Type::Custom { .. } => "".into(),
+            Type::Unresolved { .. } => "".into(),
+        };
+        Ok(res.to_string())
+    }
+
+    /// Get the idiomatic Kotlin rendering of a variable name.
+    pub fn var_name(nm: &str) -> Result<String, askama::Error> {
+        Ok(format!("`{}`", nm.to_string().to_lower_camel_case()))
+    }
+
+    pub fn unquote(nm: &str) -> Result<String, askama::Error> {
+        Ok(nm.trim_matches('`').to_string())
+    }
+}
