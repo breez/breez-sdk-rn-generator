@@ -13,7 +13,7 @@ fun as{{ type_name }}(data: ReadableMap): {{ type_name }}? {
     }
 
     {%- for field in rec.fields() %}
-    val {{field.name()}} = {{field.type_()|render_from_map(ci, field.name()|var_name|unquote, false)}}    
+    val {{field.name()|var_name|unquote}} = {{field.type_()|render_from_map(ci, field.name()|var_name|unquote, false)}}    
     {%- endfor %}
     return {{ type_name }}({%- call kt::field_list(rec) -%})    
 }
