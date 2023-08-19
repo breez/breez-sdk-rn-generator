@@ -21,7 +21,19 @@ fun as{{ type_name }}(data: ReadableMap): {{ type_name }}? {
 fun readableMapOf({{ type_name|var_name|unquote }}: {{ type_name }}): ReadableMap {
     return readableMapOf(
         {%- for field in rec.fields() %}
-        "{{ field.name()|var_name|unquote }}" to {{ field.type_()|render_to_map(ci,type_name|var_name|unquote,field.name()|var_name|unquote,false)}},
+            {%- match field.type_() %} 
+            {%- when Type::Optional(inner) %}
+                {%- let unboxed = inner.as_ref() %}
+                {%- match unboxed %}
+                {%- when Type::Sequence(inner_type) %}
+                {{- self.add_sequence_type(inner_type|type_name) }}
+                {%- else %}
+                {%- endmatch %}
+            {%- when Type::Sequence(inner_type) %}
+            {{- self.add_sequence_type(inner_type|type_name) }}
+            {%- else %}
+            {%- endmatch %}
+            "{{ field.name()|var_name|unquote }}" to {{ field.type_()|render_to_map(ci,type_name|var_name|unquote,field.name()|var_name|unquote,false)}},
         {%- endfor %}       
     )
 }

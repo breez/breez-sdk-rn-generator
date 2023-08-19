@@ -1,3 +1,6 @@
+use std::cell::RefCell;
+use std::collections::BTreeSet;
+
 use askama::Template;
 use serde::{Deserialize, Serialize};
 use uniffi_bindgen::interface::*;
@@ -40,11 +43,34 @@ impl BindingGeneratorConfig for Config {
 pub struct RNWrapper<'a> {
     config: Config,
     ci: &'a ComponentInterface,
+    // Track types used in sequences with the `add_sequence_type()` macro
+    sequence_types: RefCell<BTreeSet<String>>,
 }
 
 impl<'a> RNWrapper<'a> {
     pub fn new(config: Config, ci: &'a ComponentInterface) -> Self {
-        Self { config, ci }
+        Self { 
+            config, 
+            ci,
+            sequence_types: RefCell::new(BTreeSet::new()),
+        }
+    }
+
+    // Helper to add a sequence type
+    //
+    // Call this inside your template to add a type used in a sequence. 
+    // This type is then added to the pushToArray helper. 
+    // Imports will be sorted and de-deuped.
+    //
+    // Returns an empty string so that it can be used inside an askama `{{ }}` block.
+    fn add_sequence_type(&self, type_name: &str) -> &str {
+        self.sequence_types.borrow_mut().insert(type_name.to_owned());
+        ""
+    }
+
+    pub fn sequence_types(&self) -> Vec<String> {
+        let sequence_types = self.sequence_types.clone().into_inner();
+        sequence_types.into_iter().collect()
     }
 }
 
@@ -60,6 +86,23 @@ pub mod filters {
 
     pub fn type_name(codetype: &impl CodeType) -> Result<String, askama::Error> {
         Ok(codetype.type_label(oracle()))
+    }
+
+    pub fn render_to_array(type_name: &str) -> Result<String, askama::Error> {
+        let res: Result<String, askama::Error> = match type_name {
+            "Boolean" => Ok(format!("array.pushBoolean(value)").into()),
+            "Double" => Ok(format!("array.pushDouble(value)").into()),
+            "Int" => Ok(format!("array.pushInt(value)").into()),
+            "ReadableArray" => Ok(format!("array.pushArray(value)").into()),
+            "ReadableMap" => Ok(format!("array.pushMap(value)").into()),
+            "String" => Ok(format!("array.pushString(value)").into()),
+            "UByte" => Ok(format!("array.pushInt(value.toInt())").into()),
+            "UInt" => Ok(format!("array.pushInt(value.toInt())").into()),
+            "UShort" => Ok(format!("array.pushInt(value.toInt())").into()),
+            "ULong" => Ok(format!("array.pushDouble(value.toDouble())").into()),
+            _ => Ok(format!("array.pushMap(readableMapOf(value))").into())
+        };
+        res
     }
 
     pub fn render_to_map(

@@ -20,28 +20,9 @@ fun hasNonNullKey(map: ReadableMap, key: String): Boolean {
 fun pushToArray(array: WritableArray, value: Any?) {
     when (value) {
         null -> array.pushNull()
-        is Boolean -> array.pushBoolean(value)
-        is Double -> array.pushDouble(value)
-        is FiatCurrency -> array.pushMap(readableMapOf(value))
-        is Int -> array.pushInt(value)
-        is LocaleOverrides -> array.pushMap(readableMapOf(value))
-        is LocalizedName -> array.pushMap(readableMapOf(value))
-        is LspInformation -> array.pushMap(readableMapOf(value))
-        is Payment -> array.pushMap(readableMapOf(value))
-        is Rate -> array.pushMap(readableMapOf(value))
-        is ReadableArray -> array.pushArray(value)
-        is ReadableMap -> array.pushMap(value)
-        is ReverseSwapInfo -> array.pushMap(readableMapOf(value))
-        is ReverseSwapPairInfo -> array.pushMap(readableMapOf(value))
-        is RouteHint -> array.pushMap(readableMapOf(value))
-        is RouteHintHop -> array.pushMap(readableMapOf(value))
-        is String -> array.pushString(value)
-        is SwapInfo -> array.pushMap(readableMapOf(value))
-        is UByte -> array.pushInt(value.toInt())
-        is UInt -> array.pushInt(value.toInt())
-        is UShort -> array.pushInt(value.toInt())
-        is ULong -> array.pushDouble(value.toDouble())
-        is UnspentTransactionOutput -> array.pushMap(readableMapOf(value))
+        {%- for sequence_type in self.sequence_types() %}
+	    is {{ sequence_type }} -> {{sequence_type|render_to_array}}
+	    {%- endfor %}
         is Array<*> -> array.pushArray(readableArrayOf(value.asIterable()))
         is List<*> -> array.pushArray(readableArrayOf(value))
         else -> throw IllegalArgumentException("Unsupported type ${value::class.java.name}")
