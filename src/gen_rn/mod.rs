@@ -49,8 +49,8 @@ pub struct RNWrapper<'a> {
 
 impl<'a> RNWrapper<'a> {
     pub fn new(config: Config, ci: &'a ComponentInterface) -> Self {
-        Self { 
-            config, 
+        Self {
+            config,
             ci,
             sequence_types: RefCell::new(BTreeSet::new()),
         }
@@ -58,13 +58,15 @@ impl<'a> RNWrapper<'a> {
 
     // Helper to add a sequence type
     //
-    // Call this inside your template to add a type used in a sequence. 
-    // This type is then added to the pushToArray helper. 
+    // Call this inside your template to add a type used in a sequence.
+    // This type is then added to the pushToArray helper.
     // Imports will be sorted and de-deuped.
     //
     // Returns an empty string so that it can be used inside an askama `{{ }}` block.
     fn add_sequence_type(&self, type_name: &str) -> &str {
-        self.sequence_types.borrow_mut().insert(type_name.to_owned());
+        self.sequence_types
+            .borrow_mut()
+            .insert(type_name.to_owned());
         ""
     }
 
@@ -100,7 +102,7 @@ pub mod filters {
             "UInt" => Ok(format!("array.pushInt(value.toInt())").into()),
             "UShort" => Ok(format!("array.pushInt(value.toInt())").into()),
             "ULong" => Ok(format!("array.pushDouble(value.toDouble())").into()),
-            _ => Ok(format!("array.pushMap(readableMapOf(value))").into())
+            _ => Ok(format!("array.pushMap(readableMapOf(value))").into()),
         };
         res
     }
