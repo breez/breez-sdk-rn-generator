@@ -26,7 +26,9 @@ impl BindingGenerator for RNBindingGenerator {
             .map_err(anyhow::Error::new)?;
         print!("{}", res);
         fs::create_dir_all(out_dir)?;
-        let out_file = out_dir.join(Utf8Path::new("BreezSDKMapper.kt"));
+        let out_file = out_dir.join(Utf8Path::new(
+            "android/src/main/java/com/breezsdk/BreezSDKMapper.kt",
+        ));
         let mut f = File::create(&out_file)?;
         write!(f, "{}", res)?;
         if let Err(e) = Command::new("ktlint").arg("-F").arg(&out_file).output() {
