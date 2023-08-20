@@ -13,9 +13,6 @@ fun validateMandatoryFields(map: ReadableMap, keys: Array<String>): Boolean {
 
     return true
 }
-fun hasNonNullKey(map: ReadableMap, key: String): Boolean {
-    return map.hasKey(key) && !map.isNull(key)
-}
 
 fun pushToArray(array: WritableArray, value: Any?) {
     when (value) {
