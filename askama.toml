@@ -1,6 +1,6 @@
 [general]
 # Directories to search for templates, relative to the crate root.
-dirs = [ "src/templates" ]
+dirs = [ "src/gen_kotlin/templates" ]
 
 [[syntax]]
 name = "rn"

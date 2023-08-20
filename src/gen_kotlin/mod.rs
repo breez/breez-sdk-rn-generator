@@ -2,53 +2,23 @@ use std::cell::RefCell;
 use std::collections::BTreeSet;
 
 use askama::Template;
-use serde::{Deserialize, Serialize};
 use uniffi_bindgen::interface::*;
-use uniffi_bindgen::*;
 
 pub use uniffi_bindgen::bindings::kotlin::gen_kotlin::*;
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct Config {
-    package_name: Option<String>,
-}
-
-impl Config {}
-
-impl BindingGeneratorConfig for Config {
-    fn get_entry_from_bindings_table(_bindings: &toml::value::Value) -> Option<toml::value::Value> {
-        if let Some(table) = _bindings.as_table() {
-            table.get("rn").map(|v| v.clone())
-        } else {
-            None
-        }
-    }
-
-    fn get_config_defaults(ci: &ComponentInterface) -> Vec<(String, toml::value::Value)> {
-        vec![
-            (
-                "package_name".to_string(),
-                toml::value::Value::String(ci.namespace().to_string()),
-            ),
-            (
-                "cdylib_name".to_string(),
-                toml::value::Value::String(ci.namespace().to_string()),
-            ),
-        ]
-    }
-}
+use crate::generator::RNConfig;
 
 #[derive(Template)]
 #[template(syntax = "rn", escape = "none", path = "wrapper.kt")]
-pub struct RNWrapper<'a> {
-    config: Config,
+pub struct Generator<'a> {
+    config: RNConfig,
     ci: &'a ComponentInterface,
     // Track types used in sequences with the `add_sequence_type()` macro
     sequence_types: RefCell<BTreeSet<String>>,
 }
 
-impl<'a> RNWrapper<'a> {
-    pub fn new(config: Config, ci: &'a ComponentInterface) -> Self {
+impl<'a> Generator<'a> {
+    pub fn new(config: RNConfig, ci: &'a ComponentInterface) -> Self {
         Self {
             config,
             ci,

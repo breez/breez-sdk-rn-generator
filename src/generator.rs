@@ -1,19 +1,49 @@
 use anyhow::Result;
+use askama::Template;
 use camino::Utf8Path;
+use serde::*;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::process::Command;
-use uniffi_bindgen::{BindingGenerator, ComponentInterface};
+use uniffi_bindgen::{BindingGenerator, BindingGeneratorConfig, ComponentInterface};
 
-use askama::Template;
-
-use crate::gen_rn;
+use crate::gen_kotlin;
 
 pub struct RNBindingGenerator {}
 
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct RNConfig {
+    package_name: Option<String>,
+}
+
+impl RNConfig {}
+
+impl BindingGeneratorConfig for RNConfig {
+    fn get_entry_from_bindings_table(_bindings: &toml::value::Value) -> Option<toml::value::Value> {
+        if let Some(table) = _bindings.as_table() {
+            table.get("rn").map(|v| v.clone())
+        } else {
+            None
+        }
+    }
+
+    fn get_config_defaults(ci: &ComponentInterface) -> Vec<(String, toml::value::Value)> {
+        vec![
+            (
+                "package_name".to_string(),
+                toml::value::Value::String(ci.namespace().to_string()),
+            ),
+            (
+                "cdylib_name".to_string(),
+                toml::value::Value::String(ci.namespace().to_string()),
+            ),
+        ]
+    }
+}
+
 impl BindingGenerator for RNBindingGenerator {
-    type Config = gen_rn::Config;
+    type Config = RNConfig;
 
     fn write_bindings(
         &self,
@@ -21,7 +51,7 @@ impl BindingGenerator for RNBindingGenerator {
         config: Self::Config,
         out_dir: &Utf8Path,
     ) -> Result<()> {
-        let res = self::gen_rn::RNWrapper::new(config.clone(), &ci)
+        let res = self::gen_kotlin::Generator::new(config.clone(), &ci)
             .render()
             .map_err(anyhow::Error::new)?;
         print!("{}", res);

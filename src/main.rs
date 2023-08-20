@@ -1,4 +1,4 @@
-mod gen_rn;
+mod gen_kotlin;
 mod generator;
 use camino::Utf8Path;
 use clap::Parser;
