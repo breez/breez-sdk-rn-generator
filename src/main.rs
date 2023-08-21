@@ -1,4 +1,5 @@
 mod gen_kotlin;
+mod gen_swift;
 mod generator;
 use camino::Utf8Path;
 use clap::Parser;
