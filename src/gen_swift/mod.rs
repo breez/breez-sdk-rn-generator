@@ -107,8 +107,8 @@ pub mod filters {
                 let var_name = filters::var_name(type_name.as_str())?;
                 let var_name = filters::unquote(var_name.as_str())?;
                 let as_array_statment = match unboxed {                    
-                    Type::Record(_) => format!("arrayOf({var_name}s: {obj_prefix}{field_name}{optional_suffix})"),
-                    Type::Enum(_) => format!("arrayOf({var_name}s: {obj_prefix}{field_name}{optional_suffix})"),
+                    Type::Record(_) => format!("arrayOf({var_name}List: {obj_prefix}{field_name}{optional_suffix})"),
+                    Type::Enum(_) => format!("arrayOf({var_name}List: {obj_prefix}{field_name}{optional_suffix})"),
                     _ => format!("{obj_prefix}{field_name}")
                 };
                 Ok(as_array_statment)
@@ -222,7 +222,10 @@ pub mod filters {
     pub fn unquote(nm: &str) -> Result<String, askama::Error> {
         Ok(nm.trim_matches('`').to_string())
     }
+    pub fn list_arg(nm: &str) -> Result<String, askama::Error> {
+        Ok(format!("`{nm}List`"))
+    }
     pub fn temporary(nm: &str) -> Result<String, askama::Error> {
-        Ok(format!("{nm}_tmp"))
+        Ok(format!("{nm}Tmp"))
     }
 }

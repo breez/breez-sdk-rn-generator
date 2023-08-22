@@ -44,6 +44,6 @@ static func  as{{ type_name }}List(arr: [Any]) throws -> [{{ type_name }}] {
     return list
 }
 
-static func arrayOf({{ type_name|var_name|unquote }}s: [{{ type_name }}]) -> [Any] {
-    return {{ type_name|var_name|unquote }}s.map { (v) -> [String: Any?] in return dictionaryOf({{ type_name|var_name|unquote }}: v) }
+static func arrayOf({{ type_name|var_name|unquote|list_arg }}: [{{ type_name }}]) -> [Any] {
+    return {{ type_name|var_name|unquote|list_arg }}.map { (v) -> [String: Any?] in return dictionaryOf({{ type_name|var_name|unquote }}: v) }
 }
