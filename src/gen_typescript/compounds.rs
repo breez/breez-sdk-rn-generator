@@ -74,7 +74,7 @@ impl MapCodeType {
 impl CodeType for MapCodeType {
     fn type_label(&self, oracle: &dyn CodeOracle) -> String {
         format!(
-            "Dictionary<{}, {}>",
+            "Record<{}, {}>",
             self.key().type_label(oracle),
             self.value().type_label(oracle),
         )
@@ -82,7 +82,7 @@ impl CodeType for MapCodeType {
 
     fn canonical_name(&self, oracle: &dyn CodeOracle) -> String {
         format!(
-            "Dictionary{}{}",
+            "Record{}{}",
             self.key().type_label(oracle),
             self.value().type_label(oracle),
         )

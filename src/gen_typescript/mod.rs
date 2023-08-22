@@ -23,7 +23,7 @@ mod record;
 
 // Keywords to fix
 static KEYWORDS: Lazy<HashSet<String>> = Lazy::new(|| {
-    let list = vec!["Function", "Number", "Object", "String", "Symbol"];
+    let list = vec!["Function", "Number", "Object", "Record", "String", "Symbol"];
     HashSet::from_iter(list.into_iter().map(|s| s.to_string()))
 });
 
