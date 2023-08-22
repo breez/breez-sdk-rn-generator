@@ -34,16 +34,3 @@
         {%- if !loop.last %}, {% endif -%}
     {%- endfor %}
 {%- endmacro %}
-
-{% macro return_value(ret_type) %}   
-    {%- match ret_type %}
-    {%- when Type::Enum(_) %}
-    readableMapOf(res)
-    {%- when Type::Record(_) %}
-    readableMapOf(res)
-    {%- when Type::Sequence(_) %}
-    readableArrayOf(res)
-    {%- else %}
-    res
-    {%- endmatch %}
-{%- endmacro %}

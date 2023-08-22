@@ -52,7 +52,6 @@ impl RNBindingGenerator {
         let res = self::gen_typescript::Generator::new(config.clone(), &ci)
             .render()
             .map_err(anyhow::Error::new)?;
-        print!("{}", res);
         let mut out_file = out_dir.join(Utf8Path::new("src"));
         fs::create_dir_all(out_file.clone())?;
         out_file.push(Utf8Path::new("index.ts"));
@@ -65,7 +64,6 @@ impl RNBindingGenerator {
                 e
             )
         }
-        print!("{out_file}");
         Ok(())
     }
 }
