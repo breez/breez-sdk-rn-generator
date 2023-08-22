@@ -74,7 +74,7 @@ static func dictionaryOf({{ type_name|var_name|unquote }}: {{ type_name }}) -> [
     case .{{ variant.name()|var_name|unquote }}:  
     {% endif -%}
         return [
-            "type": "{{ variant.name() }}",
+            "type": "{{ variant.name()|var_name|unquote }}",
             {%- for f in variant.fields() %}
             "{{ f.name()|var_name|unquote }}": {{ f.type_()|render_to_map(ci,"",f.name()|var_name|unquote, false) }},             
             {%- endfor %}
