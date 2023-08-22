@@ -1,10 +1,5 @@
-use std::cell::RefCell;
-use std::collections::BTreeSet;
-
 use askama::Template;
 use uniffi_bindgen::interface::*;
-
-pub use uniffi_bindgen::bindings::kotlin::gen_kotlin::*;
 
 use crate::generator::RNConfig;
 
@@ -12,23 +7,19 @@ use crate::generator::RNConfig;
 #[template(syntax = "rn", escape = "none", path = "wrapper.swift")]
 pub struct Generator<'a> {
     config: RNConfig,
-    ci: &'a ComponentInterface,
-    // Track types used in sequences with the `add_sequence_type()` macro
-    sequence_types: RefCell<BTreeSet<String>>,
+    ci: &'a ComponentInterface,    
 }
 
 impl<'a> Generator<'a> {
     pub fn new(config: RNConfig, ci: &'a ComponentInterface) -> Self {
         Self {
             config,
-            ci,
-            sequence_types: RefCell::new(BTreeSet::new()),
+            ci,            
         }
     }
 }
 
-pub mod filters {
-    use std::{option, fmt::format};
+pub mod filters {    
 
     use heck::*;
     use uniffi_bindgen::{backend::{CodeType, TypeIdentifier}, bindings::swift::gen_swift::SwiftCodeOracle};
@@ -41,7 +32,7 @@ pub mod filters {
 
     pub fn type_name(codetype: &impl CodeType) -> Result<String, askama::Error> {
         Ok(codetype.type_label(oracle()))
-    }
+    }    
 
     pub fn render_to_map(
         t: &TypeIdentifier,
@@ -118,7 +109,7 @@ pub mod filters {
                 let as_array_statment = match unboxed {                    
                     Type::Record(_) => format!("arrayOf({var_name}s: {obj_prefix}{field_name}{optional_suffix})"),
                     Type::Enum(_) => format!("arrayOf({var_name}s: {obj_prefix}{field_name}{optional_suffix})"),
-                    _ => format!("{obj_prefix}{field_name} as? [{type_name}]")
+                    _ => format!("{obj_prefix}{field_name}")
                 };
                 Ok(as_array_statment)
             },
@@ -136,41 +127,67 @@ pub mod filters {
         res
     }
 
+    pub fn map_type_name(
+        t: &TypeIdentifier,
+        ci: &ComponentInterface) -> Result<String, askama::Error> {
+        match t {            
+            Type::Record(_) => Ok("[String: Any?]".into()),
+            Type::Enum(inner) => {
+                let enum_def = ci.get_enum_definition(inner).unwrap();
+                match enum_def.is_flat() {
+                    false => Ok("[String: Any?]".into()),
+                    true => Ok("String".into())
+                }
+            },            
+            Type::Optional(inner) => {
+                let unboxed = inner.as_ref();
+                return map_type_name(unboxed, ci)
+            }
+            Type::Sequence(inner) => {
+                let unboxed = inner.as_ref();
+                Ok(format!("[{}]", map_type_name(unboxed, ci)?))
+            }            
+            t => {
+                let name = filters::type_name(t)?;
+                Ok(format!("{name}"))
+            }
+        }
+    }
+    
     pub fn render_from_map(
         t: &TypeIdentifier,
         ci: &ComponentInterface,
-        name: &str,
-        optional: bool,
+        map_var_name: &str,        
     ) -> Result<String, askama::Error> {        
         let res: String = match t {
-            Type::UInt8 => format!("data[\"{name}\"] as! UInt8").into(),
-            Type::Int8 => format!("data[\"{name}\"] as! Int8").into(),
-            Type::UInt16 => format!("data[\"{name}\"] as! UInt16").into(),
-            Type::Int16 => format!("data[\"{name}\"] as! .Int16").into(),
-            Type::UInt32 => format!("data[\"{name}\"] as! UInt32").into(),
-            Type::Int32 => format!("data[\"{name}\"] as! Int32").into(),
-            Type::UInt64 => format!("data[\"{name}\"] as! UInt64").into(),
-            Type::Int64 => format!("data[\"{name}\"] as! Int64").into(),
-            Type::Float32 => format!("data[\"{name}\"] as! Double").into(),
-            Type::Float64 => format!("data[\"{name}\"] as! Double").into(),
-            Type::Boolean => format!("data[\"{name}\"] as! Bool").into(),
-            Type::String => format!("data[\"{name}\"] as! String").into(),
+            Type::UInt8 => format!("{map_var_name}").into(),
+            Type::Int8 => format!("{map_var_name}").into(),
+            Type::UInt16 => format!("{map_var_name}").into(),
+            Type::Int16 => format!("{map_var_name}").into(),
+            Type::UInt32 => format!("{map_var_name}").into(),
+            Type::Int32 => format!("{map_var_name}").into(),
+            Type::UInt64 => format!("{map_var_name}").into(),
+            Type::Int64 => format!("{map_var_name}").into(),
+            Type::Float32 => format!("{map_var_name}").into(),
+            Type::Float64 => format!("{map_var_name}").into(),
+            Type::Boolean => format!("{map_var_name}").into(),
+            Type::String => format!("{map_var_name}").into(),
             Type::Timestamp => "".into(),
             Type::Duration => "".into(),
             Type::Object(_) => "".into(),
             Type::Record(_) => {
                 let record_type_name = type_name(t)?;
-                format!("try as{record_type_name}(data: data[\"{name}\"] as! [String: Any?])")
+                format!("try as{record_type_name}(data: {map_var_name})")
             }
             Type::Enum(inner) => {
                 let enum_def = ci.get_enum_definition(inner).unwrap();
                 match enum_def.is_flat() {
                     false => {
-                        format!("try as{inner}(data: data[\"{name}\"] as! [String: Any?])")
+                        format!("try as{inner}(data: {map_var_name})")
                             .into()
                     }
                     true => format!(
-                        "try as{inner}(type: data[\"{name}\"] as! String)"
+                        "try as{inner}(type: {map_var_name})"
                     )
                     .into(),
                 }
@@ -179,16 +196,15 @@ pub mod filters {
             Type::CallbackInterface(_) => "".into(),
             Type::Optional(inner) => {
                 let unboxed = inner.as_ref();
-                let inner_res = render_from_map(unboxed, ci, name, true)?;                
-                format!("data[\"{name}\"] == nil ? nil : {inner_res}")
+                let inner_res = render_from_map(unboxed, ci, map_var_name)?; 
+                inner_res
             }
             Type::Sequence(inner) => {
                 let unboxed = inner.as_ref();
-                let element_type_name = type_name(unboxed)?;
-                let camel_case_element = element_type_name.to_lower_camel_case();
+                let element_type_name = type_name(unboxed)?;                
                 match unboxed {
-                    Type::Record(_) => format!("try as{element_type_name}List(arr: data[\"{name}\"] as! [Any])"),                    
-                    _ => format!("data[\"{name}\"] as! [{element_type_name}]").into(),
+                    Type::Record(_) => format!("try as{element_type_name}List(arr: {map_var_name})"),                    
+                    _ => format!("{map_var_name}").into(),
                 }                
             }
             Type::Map(_, _) => "".into(),
@@ -198,13 +214,15 @@ pub mod filters {
         };
         Ok(res.to_string())
     }
-
-    /// Get the idiomatic Kotlin rendering of a variable name.
+    
     pub fn var_name(nm: &str) -> Result<String, askama::Error> {
         Ok(format!("`{}`", nm.to_string().to_lower_camel_case()))
     }
 
     pub fn unquote(nm: &str) -> Result<String, askama::Error> {
         Ok(nm.trim_matches('`').to_string())
+    }
+    pub fn temporary(nm: &str) -> Result<String, askama::Error> {
+        Ok(format!("{nm}_tmp"))
     }
 }

@@ -56,7 +56,15 @@ impl RNBindingGenerator {
         print!("{}", swift_output);
         let mut f = File::create(&swift_out_file)?;
         write!(f, "{}", swift_output)?;
-
+        if let Err(e) = Command::new("swiftformat")
+            .arg(swift_out_file.as_str())
+            .output()
+        {
+            println!(
+                "Warning: Unable to auto-format {} using swiftformat: {e:?}",
+                swift_out_file.file_name().unwrap(),
+            );
+        }
         Ok(())
     }
 }
