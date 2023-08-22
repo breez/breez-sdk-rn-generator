@@ -1,4 +1,5 @@
 mod gen_kotlin;
+mod gen_typescript;
 mod generator;
 use camino::Utf8Path;
 use clap::Parser;
