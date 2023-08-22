@@ -153,6 +153,22 @@ pub mod filters {
             }
         }
     }
+
+    pub fn inline_optional_field(
+        t: &TypeIdentifier, ci: &ComponentInterface) -> Result<bool, askama::Error>{
+            match t {
+                Type::Optional(inner) => {
+                    let unboxed = inner.as_ref();
+                    inline_optional_field(unboxed, ci)
+                }
+                _ => {
+                    let mapped_name = filters::map_type_name(t, ci)?;
+                    let type_name = filters::type_name(t)?;
+                    Ok(mapped_name == type_name)
+                }
+                
+            }
+        }
     
     pub fn render_from_map(
         t: &TypeIdentifier,

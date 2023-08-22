@@ -3,16 +3,16 @@ static func  as{{ type_name }}(data: [String: Any?]) throws -> {{ type_name }} {
     {%- for field in rec.fields() %}
     {%- match field.type_() %}         
     {%- when Type::Optional(_) %}
-        {% if field.type_()|type_name == field.type_()|map_type_name(ci) -%}
+        {% if field.type_()|inline_optional_field(ci) -%}
         let {{field.name()|var_name|unquote}} = data["{{field.name()|var_name|unquote}}"] as? {{field.type_()|map_type_name(ci)}}
-        {% else -%}
+        {%- else -%}
         var {{field.name()|var_name|unquote}}: {{field.type_()|type_name}}
         if let {{field.name()|var_name|unquote|temporary}} = data["{{field.name()|var_name|unquote}}"] as? {{field.type_()|map_type_name(ci)}} {
             {{field.name()|var_name|unquote}} = {{field.type_()|render_from_map(ci, field.name()|var_name|unquote|temporary)}}
         }
         {% endif -%}
     {%- else %}
-    {% if field.type_()|type_name == field.type_()|map_type_name(ci) -%}
+    {% if field.type_()|inline_optional_field(ci) -%}
     guard let {{field.name()|var_name|unquote}} = data["{{field.name()|var_name|unquote}}"] as? {{field.type_()|map_type_name(ci)}} else { throw SdkError.Generic(message: "Missing mandatory field {{field.name()|var_name|unquote}} for type {{ type_name }}") }
     {%- else -%}
     guard let {{field.name()|var_name|unquote|temporary}} = data["{{field.name()|var_name|unquote}}"] as? {{field.type_()|map_type_name(ci)}} else { throw SdkError.Generic(message: "Missing mandatory field {{field.name()|var_name|unquote}} for type {{ type_name }}") }
