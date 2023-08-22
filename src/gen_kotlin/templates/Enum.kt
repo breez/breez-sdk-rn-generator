@@ -5,7 +5,7 @@ fun as{{ type_name }}(type: String): {{ type_name }} {
     return {{ type_name }}.valueOf(type.uppercase())
 }
 
-{% else %}
+{%- else %}
 
 fun as{{ type_name }}(data: ReadableMap): {{ type_name }}? {
     val type = data.getString("type")
@@ -18,7 +18,7 @@ fun as{{ type_name }}(data: ReadableMap): {{ type_name }}? {
             return {{ type_name }}.{{ variant.name() }}          
             {%- endif %}       
         }        
-    {% endfor %}    
+    {%- endfor %}    
 
     return null
 }

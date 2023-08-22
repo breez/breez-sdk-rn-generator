@@ -9,8 +9,65 @@ use std::process::Command;
 use uniffi_bindgen::{BindingGenerator, BindingGeneratorConfig, ComponentInterface};
 
 use crate::gen_kotlin;
+use crate::gen_swift;
 
 pub struct RNBindingGenerator {}
+
+impl RNBindingGenerator {
+    fn write_kotlin_bindings(
+        &self,
+        ci: &ComponentInterface,
+        config: RNConfig,
+        out_dir: &Utf8Path,
+    ) -> Result<()> {
+        // generate kotlin
+        let kotlin_output = self::gen_kotlin::Generator::new(config.clone(), ci)
+            .render()
+            .map_err(anyhow::Error::new)?;
+        let kotlin_out_file = out_dir.join(Utf8Path::new(
+            "android/src/main/java/com/breezsdk/BreezSDKMapper.kt",
+        ));
+        let mut f = File::create(&kotlin_out_file)?;
+        write!(f, "{}", kotlin_output)?;
+        if let Err(e) = Command::new("ktlint")
+            .arg("-F")
+            .arg(&kotlin_out_file)
+            .output()
+        {
+            println!(
+                "Warning: Unable to auto-format {} using ktlint: {:?}",
+                kotlin_out_file.file_name().unwrap(),
+                e
+            )
+        }
+        Ok(())
+    }
+
+    fn write_swift_bindings(
+        &self,
+        ci: &ComponentInterface,
+        config: RNConfig,
+        out_dir: &Utf8Path,
+    ) -> Result<()> {
+        let swift_output = self::gen_swift::Generator::new(config.clone(), &ci)
+            .render()
+            .map_err(anyhow::Error::new)?;
+        let swift_out_file = out_dir.join(Utf8Path::new("ios/Sources/ios/BreezSDKMapper.swift"));
+        print!("{}", swift_output);
+        let mut f = File::create(&swift_out_file)?;
+        write!(f, "{}", swift_output)?;
+        if let Err(e) = Command::new("swiftformat")
+            .arg(swift_out_file.as_str())
+            .output()
+        {
+            println!(
+                "Warning: Unable to auto-format {} using swiftformat: {e:?}",
+                swift_out_file.file_name().unwrap(),
+            );
+        }
+        Ok(())
+    }
+}
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct RNConfig {
@@ -51,24 +108,13 @@ impl BindingGenerator for RNBindingGenerator {
         config: Self::Config,
         out_dir: &Utf8Path,
     ) -> Result<()> {
-        let res = self::gen_kotlin::Generator::new(config.clone(), &ci)
-            .render()
-            .map_err(anyhow::Error::new)?;
-        print!("{}", res);
         fs::create_dir_all(out_dir)?;
-        let out_file = out_dir.join(Utf8Path::new(
-            "android/src/main/java/com/breezsdk/BreezSDKMapper.kt",
-        ));
-        let mut f = File::create(&out_file)?;
-        write!(f, "{}", res)?;
-        if let Err(e) = Command::new("ktlint").arg("-F").arg(&out_file).output() {
-            println!(
-                "Warning: Unable to auto-format {} using ktlint: {:?}",
-                out_file.file_name().unwrap(),
-                e
-            )
-        }
-        print!("{out_file}");
+
+        // generate kotlin
+        self.write_kotlin_bindings(&ci, config.clone(), out_dir)?;
+
+        // generate ios
+        self.write_swift_bindings(&ci, config.clone(), out_dir)?;
         Ok(())
     }
 }
