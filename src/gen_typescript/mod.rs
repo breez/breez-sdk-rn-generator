@@ -182,30 +182,28 @@ pub mod filters {
         Ok(oracle().enum_variant_name(nm))
     }
 
-    pub fn default_value(
-        t: &TypeIdentifier
-    ) -> Result<String, askama::Error> {
+    pub fn default_value(t: &TypeIdentifier) -> Result<String, askama::Error> {
         let res: Result<String, askama::Error> = match t {
             Type::Optional(inner) => {
                 let unboxed = inner.as_ref();
                 match unboxed {
-                    Type::UInt8 | 
-                    Type::Int8 | 
-                    Type::UInt16  | 
-                    Type::Int16 | 
-                    Type::UInt32 | 
-                    Type::Int32 | 
-                    Type::UInt64 | 
-                    Type::Int64 | 
-                    Type::Float32 | 
-                    Type::Float64 => Ok(" = 0".into()),
+                    Type::UInt8
+                    | Type::Int8
+                    | Type::UInt16
+                    | Type::Int16
+                    | Type::UInt32
+                    | Type::Int32
+                    | Type::UInt64
+                    | Type::Int64
+                    | Type::Float32
+                    | Type::Float64 => Ok(" = 0".into()),
                     Type::String => Ok(" = \"\"".into()),
                     Type::Record(_) => Ok(" = {}".into()),
                     Type::Sequence(_) => Ok(" = []".into()),
-                    _ => Ok("".into())
+                    _ => Ok("".into()),
                 }
-            },
-            _ => Ok("".into())
+            }
+            _ => Ok("".into()),
         };
         res
     }

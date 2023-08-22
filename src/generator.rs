@@ -9,6 +9,7 @@ use std::process::Command;
 use uniffi_bindgen::{BindingGenerator, BindingGeneratorConfig, ComponentInterface};
 
 use crate::gen_kotlin;
+use crate::gen_swift;
 use crate::gen_typescript;
 
 pub struct RNBindingGenerator {}
@@ -39,6 +40,31 @@ impl RNBindingGenerator {
                 kotlin_out_file.file_name().unwrap(),
                 e
             )
+        }
+        Ok(())
+    }
+
+    fn write_swift_bindings(
+        &self,
+        ci: &ComponentInterface,
+        config: RNConfig,
+        out_dir: &Utf8Path,
+    ) -> Result<()> {
+        let swift_output = self::gen_swift::Generator::new(config.clone(), &ci)
+            .render()
+            .map_err(anyhow::Error::new)?;
+        let swift_out_file = out_dir.join(Utf8Path::new("ios/Sources/ios/BreezSDKMapper.swift"));
+        print!("{}", swift_output);
+        let mut f = File::create(&swift_out_file)?;
+        write!(f, "{}", swift_output)?;
+        if let Err(e) = Command::new("swiftformat")
+            .arg(swift_out_file.as_str())
+            .output()
+        {
+            println!(
+                "Warning: Unable to auto-format {} using swiftformat: {e:?}",
+                swift_out_file.file_name().unwrap(),
+            );
         }
         Ok(())
     }
@@ -111,6 +137,9 @@ impl BindingGenerator for RNBindingGenerator {
 
         // generate kotlin
         self.write_kotlin_bindings(&ci, config.clone(), out_dir)?;
+
+        // generate ios
+        self.write_swift_bindings(&ci, config.clone(), out_dir)?;
 
         // generate typescript
         self.write_typescript_bindings(&ci, config.clone(), out_dir)?;
