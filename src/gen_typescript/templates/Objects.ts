@@ -3,18 +3,8 @@
 {%- match type_ %}
 {%- when Type::Object ( name ) %}
 {% let obj = ci.get_object_definition(name).unwrap() %}
-{%- for meth in obj.methods() -%}
-{%- match meth.return_type() -%}
-{%- when Some with (return_type) %}
-export const {{ meth.name()|fn_name }} = async ({%- call ts::arg_list_decl(meth) -%}): Promise<{{ return_type|type_name }}> => {
-    const response = await BreezSDK.{{meth.name()|fn_name}}({%- call ts::arg_list(meth) -%})
-    return response
-}
-{%- when None %}
-export const {{ meth.name()|fn_name }} = async ({%- call ts::arg_list_decl(meth) -%}): Promise<void> => {
-    await BreezSDK.{{ meth.name()|fn_name }}({%- call ts::arg_list(meth) -%})
-}
-{%- endmatch %}
+{%- for func in obj.methods() -%}
+{%- include "Function.ts" %}
 {% endfor %}
 {%- else -%}
 {%- endmatch -%}    
