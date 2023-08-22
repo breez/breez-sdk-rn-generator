@@ -1,13 +1,17 @@
-export type EventFn = (breezEvent: BreezEvent) => void
+export type EventListener = (breezEvent: BreezEvent) => void
 
-export type LogEntryFn = (logEntry: LogEntry) => void
+export type LogStream = (logEntry: LogEntry) => void
 
-export const addEventListener = (eventFn: EventFn): EmitterSubscription => {
-    return BreezSDKEmitter.addListener("breezSdkEvent", eventFn)
+export const connect = async (config: Config, seed: number[], listener: EventListener): Promise<EmitterSubscription> => {
+    const subscription = BreezSDKEmitter.addListener("breezSdkLog", listener)
+    
+    await BreezSDK.connect(config, seed)
+
+    return subscription
 }
 
-export const addLogListener = async (logEntryFn: LogEntryFn): Promise<EmitterSubscription> => {
-    const subscription = BreezSDKEmitter.addListener("breezSdkLog", logEntryFn)
+export const setLogStream = async (logStream: LogStream): Promise<EmitterSubscription> => {
+    const subscription = BreezSDKEmitter.addListener("breezSdkLog", logStream)
 
     await BreezSDK.startLogStream()
 

@@ -27,6 +27,11 @@ static KEYWORDS: Lazy<HashSet<String>> = Lazy::new(|| {
     HashSet::from_iter(list.into_iter().map(|s| s.to_string()))
 });
 
+static IGNORED_FUNCTIONS: Lazy<HashSet<String>> = Lazy::new(|| {
+    let list = vec!["connect", "set_log_stream"];
+    HashSet::from_iter(list.into_iter().map(|s| s.to_string()))
+});
+
 #[derive(Template)]
 #[template(syntax = "rn", escape = "none", path = "wrapper.ts")]
 pub struct Generator<'a> {
@@ -203,5 +208,9 @@ pub mod filters {
             _ => Ok("".into())
         };
         res
+    }
+
+    pub fn ignored_function(nm: &str) -> Result<bool, askama::Error> {
+        Ok(IGNORED_FUNCTIONS.contains(nm))
     }
 }
