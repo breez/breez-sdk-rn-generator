@@ -26,11 +26,7 @@
 
 {% macro arg_list_decl(func) %}
     {%- for arg in func.arguments() -%}
-        {{ arg.name()|var_name }}: {{ arg|type_name -}}
-        {%- match arg.type_() %}
-        {%- when Type::Optional(inner) %} = 0
-        {%- else %}
-        {%- endmatch %}
+        {{ arg.name()|var_name }}: {{ arg|type_name }}{{- arg.type_()|default_value -}}
         {%- if !loop.last %}, {% endif -%}
     {%- endfor %}
 {%- endmacro %}
