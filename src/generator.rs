@@ -10,6 +10,7 @@ use uniffi_bindgen::{BindingGenerator, BindingGeneratorConfig, ComponentInterfac
 
 use crate::gen_kotlin;
 use crate::gen_swift;
+use crate::gen_typescript;
 
 pub struct RNBindingGenerator {}
 
@@ -67,6 +68,30 @@ impl RNBindingGenerator {
         }
         Ok(())
     }
+
+    fn write_typescript_bindings(
+        &self,
+        ci: &ComponentInterface,
+        config: RNConfig,
+        out_dir: &Utf8Path,
+    ) -> Result<()> {
+        let res = self::gen_typescript::Generator::new(config.clone(), &ci)
+            .render()
+            .map_err(anyhow::Error::new)?;
+        let mut out_file = out_dir.join(Utf8Path::new("src"));
+        fs::create_dir_all(out_file.clone())?;
+        out_file.push(Utf8Path::new("index.ts"));
+        let mut f = File::create(&out_file)?;
+        write!(f, "{}", res)?;
+        if let Err(e) = Command::new("tslint").arg("--fix").arg(&out_file).output() {
+            println!(
+                "Warning: Unable to auto-format {} using tslint: {:?}",
+                out_file.file_name().unwrap(),
+                e
+            )
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -115,6 +140,9 @@ impl BindingGenerator for RNBindingGenerator {
 
         // generate ios
         self.write_swift_bindings(&ci, config.clone(), out_dir)?;
+
+        // generate typescript
+        self.write_typescript_bindings(&ci, config.clone(), out_dir)?;
         Ok(())
     }
 }
