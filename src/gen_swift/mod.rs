@@ -4,13 +4,13 @@ use uniffi_bindgen::interface::*;
 use crate::generator::RNConfig;
 
 #[derive(Template)]
-#[template(syntax = "rn", escape = "none", path = "wrapper.swift")]
-pub struct Generator<'a> {
+#[template(syntax = "rn", escape = "none", path = "mapper.swift")]
+pub struct MapperGenerator<'a> {
     config: RNConfig,
     ci: &'a ComponentInterface,
 }
 
-impl<'a> Generator<'a> {
+impl<'a> MapperGenerator<'a> {
     pub fn new(config: RNConfig, ci: &'a ComponentInterface) -> Self {
         Self { config, ci }
     }

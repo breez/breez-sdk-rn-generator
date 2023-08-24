@@ -1,6 +1,7 @@
 use anyhow::Result;
 use askama::Template;
 use camino::Utf8Path;
+use camino::Utf8PathBuf;
 use serde::*;
 use std::fs;
 use std::fs::File;
@@ -15,82 +16,131 @@ use crate::gen_typescript;
 pub struct RNBindingGenerator {}
 
 impl RNBindingGenerator {
+    fn write_bindings(
+        &self,
+        bindings_output: &String,
+        output_path: &Utf8Path,
+        file_name: &Utf8Path,
+    ) -> Result<Utf8PathBuf> {
+        fs::create_dir_all(output_path.clone())?;
+        let bindings_path: camino::Utf8PathBuf = output_path.join(file_name);
+        let mut f: File = File::create(&bindings_path)?;
+        write!(f, "{}", bindings_output)?;
+        Ok(bindings_path)
+    }
+
     fn write_kotlin_bindings(
         &self,
         ci: &ComponentInterface,
         config: RNConfig,
-        out_dir: &Utf8Path,
+        base_output_path: &Utf8Path,
     ) -> Result<()> {
-        // generate kotlin
-        let kotlin_output = self::gen_kotlin::Generator::new(config.clone(), ci)
+        // Create the path
+        let output_path =
+            base_output_path.join(Utf8Path::new("android/src/main/java/com/breezsdk"));
+        // Generate and write the binding to file
+        let bindings_output = self::gen_kotlin::MapperGenerator::new(config.clone(), ci)
             .render()
             .map_err(anyhow::Error::new)?;
-        let kotlin_out_file = out_dir.join(Utf8Path::new(
-            "android/src/main/java/com/breezsdk/BreezSDKMapper.kt",
-        ));
-        let mut f = File::create(&kotlin_out_file)?;
-        write!(f, "{}", kotlin_output)?;
+        let bindings_file = self
+            .write_bindings(
+                &bindings_output,
+                &output_path,
+                Utf8Path::new("BreezSDKMapper.kt"),
+            )
+            .unwrap();
+        // Lint binding
+        self.lint_kotlin_bindings(&bindings_file);
+        Ok(())
+    }
+
+    fn lint_kotlin_bindings(&self, bindings_file: &Utf8PathBuf) {
         if let Err(e) = Command::new("ktlint")
             .arg("-F")
-            .arg(&kotlin_out_file)
+            .arg(&bindings_file)
             .output()
         {
             println!(
                 "Warning: Unable to auto-format {} using ktlint: {:?}",
-                kotlin_out_file.file_name().unwrap(),
+                bindings_file.file_name().unwrap(),
                 e
             )
         }
-        Ok(())
     }
 
     fn write_swift_bindings(
         &self,
         ci: &ComponentInterface,
         config: RNConfig,
-        out_dir: &Utf8Path,
+        base_output_path: &Utf8Path,
     ) -> Result<()> {
-        let swift_output = self::gen_swift::Generator::new(config.clone(), &ci)
+        // Create the path
+        let output_path = base_output_path.join(Utf8Path::new("ios/Sources/ios"));
+        // Generate and write the binding to file
+        let bindings_output = self::gen_swift::MapperGenerator::new(config.clone(), ci)
             .render()
             .map_err(anyhow::Error::new)?;
-        let swift_out_file = out_dir.join(Utf8Path::new("ios/Sources/ios/BreezSDKMapper.swift"));
-        print!("{}", swift_output);
-        let mut f = File::create(&swift_out_file)?;
-        write!(f, "{}", swift_output)?;
+        let bindings_file = self
+            .write_bindings(
+                &bindings_output,
+                &output_path,
+                Utf8Path::new("BreezSDKMapper.swift"),
+            )
+            .unwrap();
+        // Lint binding
+        self.lint_swift_bindings(&bindings_file);
+        Ok(())
+    }
+
+    fn lint_swift_bindings(&self, bindings_file: &Utf8PathBuf) {
         if let Err(e) = Command::new("swiftformat")
-            .arg(swift_out_file.as_str())
+            .arg(bindings_file.as_str())
             .output()
         {
             println!(
-                "Warning: Unable to auto-format {} using swiftformat: {e:?}",
-                swift_out_file.file_name().unwrap(),
-            );
+                "Warning: Unable to auto-format {} using swiftformat: {:?}",
+                bindings_file.file_name().unwrap(),
+                e
+            )
         }
-        Ok(())
     }
 
     fn write_typescript_bindings(
         &self,
         ci: &ComponentInterface,
         config: RNConfig,
-        out_dir: &Utf8Path,
+        base_output_path: &Utf8Path,
     ) -> Result<()> {
-        let res = self::gen_typescript::Generator::new(config.clone(), &ci)
+        // Create the path
+        let output_path = base_output_path.join(Utf8Path::new("src"));
+        // Generate and write the binding to file
+        let bindings_output = self::gen_typescript::Generator::new(config.clone(), ci)
             .render()
             .map_err(anyhow::Error::new)?;
-        let mut out_file = out_dir.join(Utf8Path::new("src"));
-        fs::create_dir_all(out_file.clone())?;
-        out_file.push(Utf8Path::new("index.ts"));
-        let mut f = File::create(&out_file)?;
-        write!(f, "{}", res)?;
-        if let Err(e) = Command::new("tslint").arg("--fix").arg(&out_file).output() {
+        let bindings_file = self
+            .write_bindings(
+                &bindings_output,
+                &output_path,
+                Utf8Path::new("index.ts"),
+            )
+            .unwrap();
+        // Lint binding
+        self.lint_typescript_bindings(&bindings_file);
+        Ok(())
+    }
+
+    fn lint_typescript_bindings(&self, bindings_file: &Utf8PathBuf) {
+        if let Err(e) = Command::new("tslint")
+            .arg("--fix")
+            .arg(&bindings_file)
+            .output()
+        {
             println!(
                 "Warning: Unable to auto-format {} using tslint: {:?}",
-                out_file.file_name().unwrap(),
+                bindings_file.file_name().unwrap(),
                 e
             )
         }
-        Ok(())
     }
 }
 

@@ -9,15 +9,15 @@ pub use uniffi_bindgen::bindings::kotlin::gen_kotlin::*;
 use crate::generator::RNConfig;
 
 #[derive(Template)]
-#[template(syntax = "rn", escape = "none", path = "wrapper.kt")]
-pub struct Generator<'a> {
+#[template(syntax = "rn", escape = "none", path = "mapper.kt")]
+pub struct MapperGenerator<'a> {
     config: RNConfig,
     ci: &'a ComponentInterface,
     // Track types used in sequences with the `add_sequence_type()` macro
     sequence_types: RefCell<BTreeSet<String>>,
 }
 
-impl<'a> Generator<'a> {
+impl<'a> MapperGenerator<'a> {
     pub fn new(config: RNConfig, ci: &'a ComponentInterface) -> Self {
         Self {
             config,
