@@ -12,7 +12,6 @@ import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-{%- include "Types.kt" %}
 class BreezSDKModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
     private lateinit var executor: ExecutorService
     private var breezServices: BlockingBreezServices? = null
@@ -46,9 +45,10 @@ class BreezSDKModule(reactContext: ReactApplicationContext) : ReactContextBaseJa
 
     @ReactMethod
     fun removeListeners(count: Int) {}
-
-    {%- for func in ci.function_definitions() %}
-    {%- include "TopLevelFunctionTemplate.kt" %}
+    {% for func in ci.function_definitions() %}
+    {%- if func.name()|ignored_function == false -%}
+    {% include "TopLevelFunctionTemplate.kt" %}
+    {% endif -%}
     {%- endfor %}    
 }
 

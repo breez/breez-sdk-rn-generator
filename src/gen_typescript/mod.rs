@@ -33,13 +33,13 @@ static IGNORED_FUNCTIONS: Lazy<HashSet<String>> = Lazy::new(|| {
 });
 
 #[derive(Template)]
-#[template(syntax = "rn", escape = "none", path = "wrapper.ts")]
-pub struct Generator<'a> {
+#[template(syntax = "rn", escape = "none", path = "module.ts")]
+pub struct ModuleGenerator<'a> {
     config: RNConfig,
     ci: &'a ComponentInterface,
 }
 
-impl<'a> Generator<'a> {
+impl<'a> ModuleGenerator<'a> {
     pub fn new(config: RNConfig, ci: &'a ComponentInterface) -> Self {
         Self { config, ci }
     }

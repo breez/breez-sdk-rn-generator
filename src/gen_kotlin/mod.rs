@@ -1,12 +1,18 @@
 use std::cell::RefCell;
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashSet};
 
 use askama::Template;
+use once_cell::sync::Lazy;
 use uniffi_bindgen::interface::*;
 
 pub use uniffi_bindgen::bindings::kotlin::gen_kotlin::*;
 
 use crate::generator::RNConfig;
+
+static IGNORED_FUNCTIONS: Lazy<HashSet<String>> = Lazy::new(|| {
+    let list = vec!["connect", "set_log_stream"];
+    HashSet::from_iter(list.into_iter().map(|s| s.to_string()))
+});
 
 #[derive(Template)]
 #[template(syntax = "rn", escape = "none", path = "mapper.kt")]
@@ -46,8 +52,22 @@ impl<'a> MapperGenerator<'a> {
     }
 }
 
+#[derive(Template)]
+#[template(syntax = "rn", escape = "none", path = "module.kt")]
+pub struct ModuleGenerator<'a> {
+    config: RNConfig,
+    ci: &'a ComponentInterface,
+}
+
+impl<'a> ModuleGenerator<'a> {
+    pub fn new(config: RNConfig, ci: &'a ComponentInterface) -> Self {
+        Self { config, ci }
+    }
+}
+
 pub mod filters {
     use heck::*;
+    use uniffi_bindgen::backend::CodeOracle;
     use uniffi_bindgen::backend::{CodeType, TypeIdentifier};
 
     use super::*;
@@ -58,6 +78,17 @@ pub mod filters {
 
     pub fn type_name(codetype: &impl CodeType) -> Result<String, askama::Error> {
         Ok(codetype.type_label(oracle()))
+    }
+
+    pub fn fn_name(nm: &str) -> Result<String, askama::Error> {
+        Ok(oracle().fn_name(nm))
+    }
+
+    pub fn render_literal(
+        literal: &Literal,
+        codetype: &impl CodeType,
+    ) -> Result<String, askama::Error> {
+        Ok(codetype.literal(oracle(), literal))
     }
 
     pub fn render_to_array(type_name: &str) -> Result<String, askama::Error> {
@@ -223,5 +254,9 @@ pub mod filters {
 
     pub fn unquote(nm: &str) -> Result<String, askama::Error> {
         Ok(nm.trim_matches('`').to_string())
+    }
+
+    pub fn ignored_function(nm: &str) -> Result<bool, askama::Error> {
+        Ok(IGNORED_FUNCTIONS.contains(nm))
     }
 }

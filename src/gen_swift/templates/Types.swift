@@ -2,9 +2,9 @@
 {%- let type_name = type_|type_name %}
 {%- match type_ %}
 {%- when Type::Record ( name ) %}
-    {%- include "Record.swift" %}
+    {%- include "RecordTemplate.swift" %}
 {%- when Type::Enum ( name ) %}
-    {%- include "Enum.swift" %}
+    {%- include "EnumTemplate.swift" %}
 {%- else %}
 {%- endmatch -%}    
 

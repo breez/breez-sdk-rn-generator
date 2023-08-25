@@ -4,7 +4,7 @@
 {%- when Type::Object ( name ) %}
 {% let obj = ci.get_object_definition(name).unwrap() %}
 {%- for func in obj.methods() -%}
-{%- include "Function.ts" %}
+{%- include "TopLevelFunctionTemplate.ts" %}
 {% endfor %}
 {%- else -%}
 {%- endmatch -%}    

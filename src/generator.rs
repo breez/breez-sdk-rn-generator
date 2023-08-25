@@ -29,7 +29,7 @@ impl RNBindingGenerator {
         Ok(bindings_path)
     }
 
-    fn write_kotlin_bindings(
+    fn write_kotlin_mapper_bindings(
         &self,
         ci: &ComponentInterface,
         config: RNConfig,
@@ -47,6 +47,31 @@ impl RNBindingGenerator {
                 &bindings_output,
                 &output_path,
                 Utf8Path::new("BreezSDKMapper.kt"),
+            )
+            .unwrap();
+        // Lint binding
+        self.lint_kotlin_bindings(&bindings_file);
+        Ok(())
+    }
+
+    fn write_kotlin_module_bindings(
+        &self,
+        ci: &ComponentInterface,
+        config: RNConfig,
+        base_output_path: &Utf8Path,
+    ) -> Result<()> {
+        // Create the path
+        let output_path =
+            base_output_path.join(Utf8Path::new("android/src/main/java/com/breezsdk"));
+        // Generate and write the binding to file
+        let bindings_output = self::gen_kotlin::ModuleGenerator::new(config.clone(), ci)
+            .render()
+            .map_err(anyhow::Error::new)?;
+        let bindings_file = self
+            .write_bindings(
+                &bindings_output,
+                &output_path,
+                Utf8Path::new("BreezSDKModule.kt"),
             )
             .unwrap();
         // Lint binding
@@ -114,15 +139,11 @@ impl RNBindingGenerator {
         // Create the path
         let output_path = base_output_path.join(Utf8Path::new("src"));
         // Generate and write the binding to file
-        let bindings_output = self::gen_typescript::Generator::new(config.clone(), ci)
+        let bindings_output = self::gen_typescript::ModuleGenerator::new(config.clone(), ci)
             .render()
             .map_err(anyhow::Error::new)?;
         let bindings_file = self
-            .write_bindings(
-                &bindings_output,
-                &output_path,
-                Utf8Path::new("index.ts"),
-            )
+            .write_bindings(&bindings_output, &output_path, Utf8Path::new("index.ts"))
             .unwrap();
         // Lint binding
         self.lint_typescript_bindings(&bindings_file);
@@ -186,7 +207,8 @@ impl BindingGenerator for RNBindingGenerator {
         fs::create_dir_all(out_dir)?;
 
         // generate kotlin
-        self.write_kotlin_bindings(&ci, config.clone(), out_dir)?;
+        self.write_kotlin_mapper_bindings(&ci, config.clone(), out_dir)?;
+        self.write_kotlin_module_bindings(&ci, config.clone(), out_dir)?;
 
         // generate ios
         self.write_swift_bindings(&ci, config.clone(), out_dir)?;
