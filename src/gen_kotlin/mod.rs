@@ -259,4 +259,31 @@ pub mod filters {
     pub fn ignored_function(nm: &str) -> Result<bool, askama::Error> {
         Ok(IGNORED_FUNCTIONS.contains(nm))
     }
+
+    pub fn rn_type_name(
+        t: &TypeIdentifier,
+        ci: &ComponentInterface,
+    ) -> Result<String, askama::Error> {
+        match t {
+            Type::Int8 | Type::UInt8 | Type::Int16 | Type::UInt16 | Type::Int32 | Type::UInt32 => {
+                Ok("Int".to_string())
+            }
+            Type::Int64 | Type::UInt64 | Type::Float32 | Type::Float64 => Ok("Double".to_string()),
+            Type::String => Ok("String".to_string()),
+            Type::Enum(inner) => {
+                let enum_def = ci.get_enum_definition(inner).unwrap();
+                match enum_def.is_flat() {
+                    false => Ok("ReadableMap".to_string()),
+                    true => Ok("String".to_string()),
+                }
+            }
+            Type::Record(_) => Ok("ReadableMap".to_string()),
+            Type::Optional(inner) => {
+                let unboxed = inner.as_ref();
+                rn_type_name(unboxed, ci)
+            }
+            Type::Sequence(_) => Ok("ReadableArray".to_string()),
+            _ => Ok("".to_string()),
+        }
+    }
 }

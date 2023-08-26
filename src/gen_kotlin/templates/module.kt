@@ -45,11 +45,13 @@ class BreezSDKModule(reactContext: ReactApplicationContext) : ReactContextBaseJa
 
     @ReactMethod
     fun removeListeners(count: Int) {}
+    {% let obj_interface = "" -%}
     {% for func in ci.function_definitions() %}
     {%- if func.name()|ignored_function == false -%}
     {% include "TopLevelFunctionTemplate.kt" %}
     {% endif -%}
-    {%- endfor %}    
+    {%- endfor %}  
+    {%- include "Objects.kt" %}
 }
 
 {% import "macros.kt" as kt %}

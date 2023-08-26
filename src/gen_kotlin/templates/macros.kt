@@ -14,18 +14,7 @@
 
 {% macro arg_list_decl(func) %}
     {%- for arg in func.arguments() -%}
-        {%- match arg.type_() %}      
-        {%- when Type::Enum(_) %}{{ arg.name()|var_name|unquote }}: ReadableMap 
-        {%- when Type::Record(_) %}{{ arg.name()|var_name|unquote }}: ReadableMap
-        {%- when Type::Sequence(_) %}{{ arg.name()|var_name|unquote }}: ReadableArray
-        {%- else %}{{ arg.name()|var_name|unquote }}: {{ arg|type_name }}
-        {%- endmatch %}
-        {%- match arg.default_value() %}
-        {%- when Some with(literal) %} = {{ literal|render_literal(arg) }}
-        {%- else %}
-        {%- endmatch %}
-        {%- if !loop.last %}, {% endif -%}
-    {%- endfor %}
+    {{- arg.name()|var_name|unquote }}: {{ arg.type_()|rn_type_name(ci) -}}, {% endfor %}
 {%- endmacro %}
 
 {% macro return_value(ret_type) %}   
