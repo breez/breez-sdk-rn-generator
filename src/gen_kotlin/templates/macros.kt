@@ -1,7 +1,12 @@
 
 {% macro arg_list(func) %}
     {%- for arg in func.arguments() -%}
+        {%- match arg.type_() -%}         
+        {%- when Type::Record(_) -%}
+        {{ arg.type_()|type_name|var_name|unquote -}}
+        {%- else -%}
         {{ arg.name()|var_name|unquote -}}
+        {%- endmatch -%}
         {%- if !loop.last %}, {% endif -%}
     {%- endfor %}
 {%- endmacro %}
