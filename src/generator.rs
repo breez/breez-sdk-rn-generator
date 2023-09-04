@@ -93,7 +93,7 @@ impl RNBindingGenerator {
         }
     }
 
-    fn write_swift_bindings(
+    fn write_swift_mapper_bindings(
         &self,
         ci: &ComponentInterface,
         config: RNConfig,
@@ -110,6 +110,30 @@ impl RNBindingGenerator {
                 &bindings_output,
                 &output_path,
                 Utf8Path::new("BreezSDKMapper.swift"),
+            )
+            .unwrap();
+        // Lint binding
+        self.lint_swift_bindings(&bindings_file);
+        Ok(())
+    }
+
+    fn write_swift_module_bindings(
+        &self,
+        ci: &ComponentInterface,
+        config: RNConfig,
+        base_output_path: &Utf8Path,
+    ) -> Result<()> {
+        // Create the path
+        let output_path = base_output_path.join(Utf8Path::new("ios/Sources/ios"));
+        // Generate and write the binding to file
+        let bindings_output = self::gen_swift::ModuleGenerator::new(config.clone(), ci)
+            .render()
+            .map_err(anyhow::Error::new)?;
+        let bindings_file = self
+            .write_bindings(
+                &bindings_output,
+                &output_path,
+                Utf8Path::new("BreezSDK.swift"),
             )
             .unwrap();
         // Lint binding
@@ -211,7 +235,8 @@ impl BindingGenerator for RNBindingGenerator {
         self.write_kotlin_module_bindings(&ci, config.clone(), out_dir)?;
 
         // generate ios
-        self.write_swift_bindings(&ci, config.clone(), out_dir)?;
+        self.write_swift_mapper_bindings(&ci, config.clone(), out_dir)?;
+        self.write_swift_module_bindings(&ci, config.clone(), out_dir)?;
 
         // generate typescript
         self.write_typescript_bindings(&ci, config.clone(), out_dir)?;

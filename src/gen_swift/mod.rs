@@ -1,7 +1,17 @@
+use std::collections::HashSet;
+
 use askama::Template;
+use once_cell::sync::Lazy;
 use uniffi_bindgen::interface::*;
 
 use crate::generator::RNConfig;
+
+pub use uniffi_bindgen::bindings::swift::gen_swift::*;
+
+static IGNORED_FUNCTIONS: Lazy<HashSet<String>> = Lazy::new(|| {
+    let list = vec!["connect", "default_config", "set_log_stream"];
+    HashSet::from_iter(list.into_iter().map(|s| s.to_string()))
+});
 
 #[derive(Template)]
 #[template(syntax = "rn", escape = "none", path = "mapper.swift")]
@@ -16,13 +26,24 @@ impl<'a> MapperGenerator<'a> {
     }
 }
 
+#[derive(Template)]
+#[template(syntax = "rn", escape = "none", path = "module.swift")]
+pub struct ModuleGenerator<'a> {
+    config: RNConfig,
+    ci: &'a ComponentInterface,
+}
+
+impl<'a> ModuleGenerator<'a> {
+    pub fn new(config: RNConfig, ci: &'a ComponentInterface) -> Self {
+        Self { config, ci }
+    }
+}
+
 pub mod filters {
 
     use heck::*;
-    use uniffi_bindgen::{
-        backend::{CodeType, TypeIdentifier},
-        bindings::swift::gen_swift::SwiftCodeOracle,
-    };
+    use uniffi_bindgen::backend::CodeOracle;
+    use uniffi_bindgen::backend::{CodeType, TypeIdentifier};
 
     use super::*;
 
@@ -32,6 +53,17 @@ pub mod filters {
 
     pub fn type_name(codetype: &impl CodeType) -> Result<String, askama::Error> {
         Ok(codetype.type_label(oracle()))
+    }
+
+    pub fn fn_name(nm: &str) -> Result<String, askama::Error> {
+        Ok(oracle().fn_name(nm))
+    }
+
+    pub fn render_literal(
+        literal: &Literal,
+        codetype: &impl CodeType,
+    ) -> Result<String, askama::Error> {
+        Ok(codetype.literal(oracle(), literal))
     }
 
     pub fn render_to_map(
@@ -126,7 +158,7 @@ pub mod filters {
         res
     }
 
-    pub fn map_type_name(
+    pub fn rn_type_name(
         t: &TypeIdentifier,
         ci: &ComponentInterface,
     ) -> Result<String, askama::Error> {
@@ -141,11 +173,11 @@ pub mod filters {
             }
             Type::Optional(inner) => {
                 let unboxed = inner.as_ref();
-                return map_type_name(unboxed, ci);
+                return rn_type_name(unboxed, ci);
             }
             Type::Sequence(inner) => {
                 let unboxed = inner.as_ref();
-                Ok(format!("[{}]", map_type_name(unboxed, ci)?))
+                Ok(format!("[{}]", rn_type_name(unboxed, ci)?))
             }
             t => {
                 let name = filters::type_name(t)?;
@@ -164,7 +196,7 @@ pub mod filters {
                 inline_optional_field(unboxed, ci)
             }
             _ => {
-                let mapped_name = filters::map_type_name(t, ci)?;
+                let mapped_name = filters::rn_type_name(t, ci)?;
                 let type_name = filters::type_name(t)?;
                 Ok(mapped_name == type_name)
             }
@@ -235,9 +267,15 @@ pub mod filters {
     pub fn unquote(nm: &str) -> Result<String, askama::Error> {
         Ok(nm.trim_matches('`').to_string())
     }
+
+    pub fn ignored_function(nm: &str) -> Result<bool, askama::Error> {
+        Ok(IGNORED_FUNCTIONS.contains(nm))
+    }
+    
     pub fn list_arg(nm: &str) -> Result<String, askama::Error> {
         Ok(format!("`{nm}List`"))
     }
+
     pub fn temporary(nm: &str) -> Result<String, askama::Error> {
         Ok(format!("{nm}Tmp"))
     }
