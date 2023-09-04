@@ -260,6 +260,37 @@ pub mod filters {
         Ok(IGNORED_FUNCTIONS.contains(nm))
     }
 
+    pub fn rn_convert_type(
+        t: &TypeIdentifier,
+        ci: &ComponentInterface,
+    ) -> Result<String, askama::Error> {
+        match t {
+            Type::UInt8 | Type::UInt16 | Type::UInt32 => Ok(".toUInt()".to_string()),
+            Type::Int64 => Ok(".toLong()".to_string()),
+            Type::UInt64 => Ok(".toULong()".to_string()),
+            Type::Float32 | Type::Float64 => Ok(".toFloat()".to_string()),
+            Type::Optional(inner) => {
+                let unboxed = inner.as_ref();
+                let conversion = rn_convert_type(unboxed, ci).unwrap();
+                let optional = match *unboxed {
+                    Type::Int8
+                    | Type::UInt8
+                    | Type::Int16
+                    | Type::UInt16
+                    | Type::Int32
+                    | Type::UInt32
+                    | Type::Int64
+                    | Type::UInt64 => ".takeUnless { it == 0 }".to_string(),
+                    Type::Float32 | Type::Float64 => ".takeUnless { it == 0.0 }".to_string(),
+                    Type::String => ".takeUnless { it.isEmpty() }".to_string(),
+                    _ => "".to_string(),
+                };
+                Ok(format!("{}{}", conversion, optional))
+            }
+            _ => Ok("".to_string()),
+        }
+    }
+
     pub fn rn_type_name(
         t: &TypeIdentifier,
         ci: &ComponentInterface,
