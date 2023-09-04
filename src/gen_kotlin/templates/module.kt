@@ -1,9 +1,5 @@
 package com.breezsdk
 
-import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.os.Message
 import breez_sdk.*
 import com.facebook.react.bridge.*
 import com.facebook.react.modules.core.DeviceEventManagerModule.RCTDeviceEventEmitter
@@ -45,12 +41,63 @@ class BreezSDKModule(reactContext: ReactApplicationContext) : ReactContextBaseJa
 
     @ReactMethod
     fun removeListeners(count: Int) {}
+
     {% let obj_interface = "" -%}
     {% for func in ci.function_definitions() %}
     {%- if func.name()|ignored_function == false -%}
     {% include "TopLevelFunctionTemplate.kt" %}
     {% endif -%}
     {%- endfor %}  
+    @ReactMethod
+    fun defaultConfig(envType: String, apiKey: String, nodeConfig: ReadableMap, promise: Promise) {
+        try {
+            val nodeConfigData = asNodeConfig(nodeConfigMap) ?: run { throw SdkException.Generic("Missing mandatory field nodeConfig of type NodeConfig") }
+            val workingDir = File(reactApplicationContext.filesDir.toString() + "/breezSdk")
+
+            if (!workingDir.exists()) {
+                workingDir.mkdirs()
+            }
+
+            val config = defaultConfig(asEnvironmentType(envType), apiKey, nodeConfigData)
+            config.workingDir = workingDir.absolutePath
+
+            promise.resolve(readableMapOf(config))
+        } catch (e: SdkException) {
+            e.printStackTrace()
+            promise.reject(e.javaClass.simpleName, e.message, e)
+        }
+    }
+
+    @ReactMethod
+    fun startLogStream(promise: Promise) {
+        try {
+            val emitter = ReactApplicationContext.getJSModule(RCTDeviceEventEmitter::class.java)
+
+            setLogStream(BreezSDKLogStream(emitter))
+            promise.resolve(readableMapOf("status" to "ok"))
+        } catch (e: SdkException) {
+            e.printStackTrace()
+            promise.reject(e.javaClass.simpleName, e.message, e)
+        }
+    }
+
+    @ReactMethod
+    fun connect(config: ReadableMap, seed: ReadableArray, promise: Promise) {
+        if (breezServices != null) {
+            promise.reject(TAG, "BreezServices already initialized")
+        }
+
+        try {
+            val configData = asConfig(config) ?: run { throw SdkException.Generic("Missing mandatory field config of type Config") }
+            val emitter = reactApplicationContext.getJSModule(RCTDeviceEventEmitter::class.java)
+
+            breezServices = connect(configData, asUByteList(seed), BreezSDKListener(emitter))
+            promise.resolve(readableMapOf("status" to "ok"))
+        } catch (e: SdkException) {
+            e.printStackTrace()
+            promise.reject(e.javaClass.simpleName, e.message, e)
+        }
+    }
     {%- include "Objects.kt" %}
 }
 

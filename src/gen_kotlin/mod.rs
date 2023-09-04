@@ -10,7 +10,7 @@ pub use uniffi_bindgen::bindings::kotlin::gen_kotlin::*;
 use crate::generator::RNConfig;
 
 static IGNORED_FUNCTIONS: Lazy<HashSet<String>> = Lazy::new(|| {
-    let list = vec!["connect", "set_log_stream"];
+    let list = vec!["connect", "default_config", "set_log_stream"];
     HashSet::from_iter(list.into_iter().map(|s| s.to_string()))
 });
 
