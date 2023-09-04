@@ -4,7 +4,7 @@
         {%- when Type::Record(_) -%}
         {{ arg.name()|var_name|unquote }}: {{ arg.type_()|type_name|var_name|unquote -}}
         {%- else -%}
-        {{ arg.name()|var_name|unquote }}: {{ arg.name()|var_name|unquote -}}
+        {{ arg.name()|var_name|unquote }}: {{ arg.type_()|rn_convert_type(arg.name()|var_name|unquote) -}}
         {%- endmatch -%}
         {%- if !loop.last %}, {% endif -%}
     {%- endfor %}
@@ -12,7 +12,7 @@
 
 {% macro arg_list_decl(func) %}
     {%- for arg in func.arguments() -%}
-    {{- arg.name()|var_name|unquote }}: {{ arg.type_()|rn_type_name(ci) -}}, {% endfor %}
+    {{- arg.name()|var_name|unquote }}: {{ arg.type_()|rn_type_name(ci, false) -}}, {% endfor %}
 {%- endmacro %}
 
 {% macro extern_arg_list(func) %}
@@ -30,17 +30,3 @@
         {{ f.name()|var_name|unquote }}: {{ f.name()|var_name|unquote }}{%- if !loop.last %}, {% endif -%}
     {%- endfor %}
 {%- endmacro -%}
-
-{% macro return_value(ret_type) %}   
-    {%- match ret_type %}
-    {%- when Type::Enum(_) %}BreezSDKMapper.dictionaryOf({{ ret_type|type_name|var_name|unquote }}: res)
-    {%- when Type::Record(_) %}BreezSDKMapper.dictionaryOf({{ ret_type|type_name|var_name|unquote }}: res)
-    {%- when Type::Sequence(inner_type) %}
-        {%- match ret_type %}
-        {%- when Type::Enum(_) %}BreezSDKMapper.dictionaryOf({{ ret_type|type_name|var_name|unquote }}: res)
-        {%- when Type::Record(_) %}BreezSDKMapper.dictionaryOf({{ ret_type|type_name|var_name|unquote }}: res)
-        {%- else %}res
-        {%- endmatch %}
-    {%- else %}res
-    {%- endmatch %}
-{%- endmacro %}

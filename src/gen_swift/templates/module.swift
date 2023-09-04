@@ -40,7 +40,7 @@ class RNBreezSDK: RCTEventEmitter {
         throw SdkError.Generic(message: "BreezServices not initialized")
     }
 
-    {% let obj_interface = "" -%}
+    {% let obj_interface = "BreezSDK." -%}
     {% for func in ci.function_definitions() %}
     {%- if func.name()|ignored_function == false -%}
     {% include "TopLevelFunctionTemplate.swift" %}
@@ -49,8 +49,8 @@ class RNBreezSDK: RCTEventEmitter {
     @objc(defaultConfig:apiKey:nodeConfig:resolver:rejecter:)
     func defaultConfig(_ envType: String, apiKey: String, nodeConfig: [String: Any], resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) -> Void {
         do {
-            let nodeConfigData = try BreezSDKMapper.asNodeConfig(nodeConfig: nodeConfigMap)
-            var config = try BreezSDK.defaultConfig(envType: BreezSDKMapper.asEnvironmentType(envType: envType), apiKey: apiKey, nodeConfig: nodeConfigData)
+            let nodeConfigData = try BreezSDKMapper.asNodeConfig(data: nodeConfig)
+            var config = try BreezSDK.defaultConfig(envType: BreezSDKMapper.asEnvironmentType(type: envType), apiKey: apiKey, nodeConfig: nodeConfigData)
             config.workingDir = RNBreezSDK.breezSdkDirectory.path                
             resolve(BreezSDKMapper.dictionaryOf(config: config))
         } catch let err {
@@ -76,7 +76,7 @@ class RNBreezSDK: RCTEventEmitter {
         }
             
         do {
-            let config = try BreezSDKMapper.asConfig(config: config)
+            let config = try BreezSDKMapper.asConfig(data: config)
             self.breezServices = try BreezSDK.connect(config: config, seed: seed, listener: BreezSDKListener(emitter: self))                
             resolve(["status": "ok"])
         } catch let err {

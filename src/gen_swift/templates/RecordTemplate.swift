@@ -4,18 +4,18 @@ static func  as{{ type_name }}(data: [String: Any?]) throws -> {{ type_name }} {
     {%- match field.type_() %}         
     {%- when Type::Optional(_) %}
         {% if field.type_()|inline_optional_field(ci) -%}
-        let {{field.name()|var_name|unquote}} = data["{{field.name()|var_name|unquote}}"] as? {{field.type_()|rn_type_name(ci)}}
+        let {{field.name()|var_name|unquote}} = data["{{field.name()|var_name|unquote}}"] as? {{field.type_()|rn_type_name(ci, true)}}
         {%- else -%}
         var {{field.name()|var_name|unquote}}: {{field.type_()|type_name}}
-        if let {{field.name()|var_name|unquote|temporary}} = data["{{field.name()|var_name|unquote}}"] as? {{field.type_()|rn_type_name(ci)}} {
+        if let {{field.name()|var_name|unquote|temporary}} = data["{{field.name()|var_name|unquote}}"] as? {{field.type_()|rn_type_name(ci, true)}} {
             {{field.name()|var_name|unquote}} = {{field.type_()|render_from_map(ci, field.name()|var_name|unquote|temporary)}}
         }
         {% endif -%}
     {%- else %}
     {% if field.type_()|inline_optional_field(ci) -%}
-    guard let {{field.name()|var_name|unquote}} = data["{{field.name()|var_name|unquote}}"] as? {{field.type_()|rn_type_name(ci)}} else { throw SdkError.Generic(message: "Missing mandatory field {{field.name()|var_name|unquote}} for type {{ type_name }}") }
+    guard let {{field.name()|var_name|unquote}} = data["{{field.name()|var_name|unquote}}"] as? {{field.type_()|rn_type_name(ci, true)}} else { throw SdkError.Generic(message: "Missing mandatory field {{field.name()|var_name|unquote}} for type {{ type_name }}") }
     {%- else -%}
-    guard let {{field.name()|var_name|unquote|temporary}} = data["{{field.name()|var_name|unquote}}"] as? {{field.type_()|rn_type_name(ci)}} else { throw SdkError.Generic(message: "Missing mandatory field {{field.name()|var_name|unquote}} for type {{ type_name }}") }
+    guard let {{field.name()|var_name|unquote|temporary}} = data["{{field.name()|var_name|unquote}}"] as? {{field.type_()|rn_type_name(ci, true)}} else { throw SdkError.Generic(message: "Missing mandatory field {{field.name()|var_name|unquote}} for type {{ type_name }}") }
     let {{field.name()|var_name|unquote}} = {{field.type_()|render_from_map(ci, field.name()|var_name|unquote|temporary)}}
     {% endif -%}        
     {% endmatch %}

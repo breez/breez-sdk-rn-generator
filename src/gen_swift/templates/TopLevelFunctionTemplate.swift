@@ -5,25 +5,26 @@
 {%- for arg in func.arguments() -%}
     {%- match arg.type_() %}
     {%- when Type::Record(_) %}
-            let {{arg.type_()|type_name|var_name|unquote}} = try as{{arg.type_()|type_name}}({{ arg.name()|var_name|unquote }})
+            let {{arg.type_()|type_name|var_name|unquote}} = try BreezSDKMapper.as{{arg.type_()|type_name}}(data: {{ arg.name()|var_name|unquote }})
     {%- else %}
     {%- endmatch %}
 {%- endfor %}
-            let res = try getBreezServices().{{ func.name()|fn_name|unquote }}({%- call swift::arg_list(func) -%})
 {%- match func.return_type() -%}
 {%- when Some with (return_type) %}
+            let res = try {{ obj_interface }}{{ func.name()|fn_name|unquote }}({%- call swift::arg_list(func) -%})
     {%- match return_type %}
     {%- when Type::Optional(inner) %}
         {%- let unboxed = inner.as_ref() %}
             if res != nil {
-                resolve({% call swift::return_value(unboxed) %})
+                resolve({{ unboxed|rn_return_type(unboxed|type_name|var_name|unquote, true) }})
             } else {
                 rejectErr(err: SdkError.Generic(message: "No result found"), reject: reject)
             }
     {%- else %}
-            resolve({% call swift::return_value(return_type) %})
+            resolve({{ return_type|rn_return_type(return_type|type_name|var_name|unquote, false) }})
     {%- endmatch %}
 {%- when None %}
+            try {{ obj_interface }}{{ func.name()|fn_name|unquote }}({%- call swift::arg_list(func) -%})
             resolve(["status": "ok"])     
 {%- endmatch %}
         } catch let err {

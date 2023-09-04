@@ -158,26 +158,94 @@ pub mod filters {
         res
     }
 
+    pub fn rn_convert_type(
+        t: &TypeIdentifier,
+        converted_var_name: &str,
+    ) -> Result<String, askama::Error> {
+        match t {
+            Type::Optional(inner) => {
+                let unboxed = inner.as_ref();
+                let optional = match *unboxed {
+                    Type::Int8
+                    | Type::UInt8
+                    | Type::Int16
+                    | Type::UInt16
+                    | Type::Int32
+                    | Type::UInt32
+                    | Type::Int64
+                    | Type::UInt64 => format!(
+                        "({} == 0 ? nil : {})",
+                        converted_var_name, converted_var_name
+                    ),
+                    Type::Float32 | Type::Float64 => format!(
+                        "({} == 0.0 ? nil : {})",
+                        converted_var_name, converted_var_name
+                    ),
+                    Type::String => format!(
+                        "({}.isEmpty ? nil : {})",
+                        converted_var_name, converted_var_name
+                    ),
+                    _ => "".to_string(),
+                };
+                Ok(optional.to_string())
+            }
+            _ => Ok(converted_var_name.to_string()),
+        }
+    }
+
+    pub fn rn_return_type(
+        t: &TypeIdentifier,
+        name: &str,
+        optional: bool,
+    ) -> Result<String, askama::Error> {
+        let mut optional_suffix = "";
+        if optional {
+            optional_suffix = "!";
+        }
+        match t {
+            Type::Enum(_) | Type::Record(_) => Ok(format!(
+                "BreezSDKMapper.dictionaryOf({}: res{})",
+                name, optional_suffix
+            )),
+            Type::Sequence(inner) => {
+                let unboxed = inner.as_ref();
+                match unboxed {
+                    Type::Enum(_) | Type::Record(_) => Ok(format!(
+                        "BreezSDKMapper.arrayOf({}List: res{})",
+                        name, optional_suffix
+                    )),
+                    _ => Ok(format!("res{}", optional_suffix)),
+                }
+            }
+            _ => Ok(format!("res{}", optional_suffix)),
+        }
+    }
+
     pub fn rn_type_name(
         t: &TypeIdentifier,
         ci: &ComponentInterface,
+        optional: bool,
     ) -> Result<String, askama::Error> {
+        let mut optional_suffix = "";
+        if optional {
+            optional_suffix = "?";
+        }
         match t {
-            Type::Record(_) => Ok("[String: Any?]".into()),
+            Type::Record(_) => Ok(format!("[String: Any{}]", optional_suffix)),
             Type::Enum(inner) => {
                 let enum_def = ci.get_enum_definition(inner).unwrap();
                 match enum_def.is_flat() {
-                    false => Ok("[String: Any?]".into()),
+                    false => Ok(format!("[String: Any{}]", optional_suffix)),
                     true => Ok("String".into()),
                 }
             }
             Type::Optional(inner) => {
                 let unboxed = inner.as_ref();
-                return rn_type_name(unboxed, ci);
+                rn_type_name(unboxed, ci, optional)
             }
             Type::Sequence(inner) => {
                 let unboxed = inner.as_ref();
-                Ok(format!("[{}]", rn_type_name(unboxed, ci)?))
+                Ok(format!("[{}]", rn_type_name(unboxed, ci, optional)?))
             }
             t => {
                 let name = filters::type_name(t)?;
@@ -196,7 +264,7 @@ pub mod filters {
                 inline_optional_field(unboxed, ci)
             }
             _ => {
-                let mapped_name = filters::rn_type_name(t, ci)?;
+                let mapped_name = filters::rn_type_name(t, ci, true)?;
                 let type_name = filters::type_name(t)?;
                 Ok(mapped_name == type_name)
             }
@@ -271,7 +339,7 @@ pub mod filters {
     pub fn ignored_function(nm: &str) -> Result<bool, askama::Error> {
         Ok(IGNORED_FUNCTIONS.contains(nm))
     }
-    
+
     pub fn list_arg(nm: &str) -> Result<String, askama::Error> {
         Ok(format!("`{nm}List`"))
     }
