@@ -85,6 +85,7 @@ class BreezSDKModule(reactContext: ReactApplicationContext) : ReactContextBaseJa
     fun connect(config: ReadableMap, seed: ReadableArray, promise: Promise) {
         if (breezServices != null) {
             promise.reject(TAG, "BreezServices already initialized")
+            return
         }
 
         try {

@@ -5,7 +5,6 @@
             try {
 {%- for arg in func.arguments() -%}
     {%- match arg.type_() %}
-    {%- when Type::Optional(_) %}
     {%- when Type::Record(_) %}
                 val {{arg.type_()|type_name|var_name|unquote}} = as{{arg.type_()|type_name}}({{ arg.name()|var_name|unquote }}) ?: run { throw SdkException.Generic("Missing mandatory field {{arg.name()|var_name|unquote}} of type {{ arg.type_()|type_name }}") }
     {%- else %}
