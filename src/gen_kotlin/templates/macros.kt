@@ -2,10 +2,14 @@
 {% macro arg_list(func) %}
     {%- for arg in func.arguments() -%}
         {%- match arg.type_() -%}         
+        {%- when Type::Enum(_) -%}
+        {{ arg.name()|var_name|unquote|temporary }}
+        {%- when Type::Optional(_) -%}
+        {{ arg.name()|var_name|unquote|temporary }}
         {%- when Type::Record(_) -%}
         {{ arg.type_()|type_name|var_name|unquote -}}
         {%- else -%}
-        {{ arg.name()|var_name|unquote }}{{ arg.type_()|rn_convert_type(ci) -}}
+        {{ arg.name()|var_name|unquote }}
         {%- endmatch -%}
         {%- if !loop.last %}, {% endif -%}
     {%- endfor %}

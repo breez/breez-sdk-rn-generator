@@ -51,14 +51,15 @@ class BreezSDKModule(reactContext: ReactApplicationContext) : ReactContextBaseJa
     @ReactMethod
     fun defaultConfig(envType: String, apiKey: String, nodeConfig: ReadableMap, promise: Promise) {
         try {
-            val nodeConfigData = asNodeConfig(nodeConfigMap) ?: run { throw SdkException.Generic("Missing mandatory field nodeConfig of type NodeConfig") }
+            val envTypeTmp = asEnvironmentType(envType)
+            val nodeConfigTmp = asNodeConfig(nodeConfig) ?: run { throw SdkException.Generic("Missing mandatory field nodeConfig of type NodeConfig") }
             val workingDir = File(reactApplicationContext.filesDir.toString() + "/breezSdk")
 
             if (!workingDir.exists()) {
                 workingDir.mkdirs()
             }
 
-            val config = defaultConfig(asEnvironmentType(envType), apiKey, nodeConfigData)
+            val config = defaultConfig(envTypeTmp, apiKey, nodeConfigTmp)
             config.workingDir = workingDir.absolutePath
 
             promise.resolve(readableMapOf(config))
@@ -89,10 +90,10 @@ class BreezSDKModule(reactContext: ReactApplicationContext) : ReactContextBaseJa
         }
 
         try {
-            val configData = asConfig(config) ?: run { throw SdkException.Generic("Missing mandatory field config of type Config") }
+            val configTmp = asConfig(config) ?: run { throw SdkException.Generic("Missing mandatory field config of type Config") }
             val emitter = reactApplicationContext.getJSModule(RCTDeviceEventEmitter::class.java)
 
-            breezServices = connect(configData, asUByteList(seed), BreezSDKListener(emitter))
+            breezServices = connect(configTmp, asUByteList(seed), BreezSDKListener(emitter))
             promise.resolve(readableMapOf("status" to "ok"))
         } catch (e: SdkException) {
             e.printStackTrace()

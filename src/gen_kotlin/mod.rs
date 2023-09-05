@@ -317,4 +317,8 @@ pub mod filters {
             _ => Ok("".to_string()),
         }
     }
+
+    pub fn temporary(nm: &str) -> Result<String, askama::Error> {
+        Ok(format!("{nm}Tmp"))
+    }
 }
