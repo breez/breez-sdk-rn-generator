@@ -27,6 +27,19 @@ impl<'a> MapperGenerator<'a> {
 }
 
 #[derive(Template)]
+#[template(syntax = "rn", escape = "none", path = "extern.m")]
+pub struct ExternGenerator<'a> {
+    config: RNConfig,
+    ci: &'a ComponentInterface,
+}
+
+impl<'a> ExternGenerator<'a> {
+    pub fn new(config: RNConfig, ci: &'a ComponentInterface) -> Self {
+        Self { config, ci }
+    }
+}
+
+#[derive(Template)]
 #[template(syntax = "rn", escape = "none", path = "module.swift")]
 pub struct ModuleGenerator<'a> {
     config: RNConfig,
@@ -251,6 +264,28 @@ pub mod filters {
                 let name = filters::type_name(t)?;
                 Ok(format!("{name}"))
             }
+        }
+    }
+
+    pub fn extern_type_name(
+        t: &TypeIdentifier,
+    ) -> Result<String, askama::Error> {
+        match t {
+            Type::Int8 | Type::Int16 | Type::Int32 | Type::UInt32 | Type::Int64 => {
+                Ok("NSInteger*".to_string())
+            }
+            Type::UInt8 | Type::UInt16 | Type::UInt32 | Type::UInt64 => {
+                Ok("NSUInteger*".to_string())
+            }
+            Type::Float32 | Type::Float64 => Ok("NSNumber*".to_string()),
+            Type::String | Type::Enum(_) => Ok("NSString*".to_string()),
+            Type::Record(_) => Ok("NSDictionary*".to_string()),
+            Type::Optional(inner) => {
+                let unboxed = inner.as_ref();
+                extern_type_name(unboxed)
+            }
+            Type::Sequence(_) => Ok("NSArray*".to_string()),
+            _ => Ok("".to_string()),
         }
     }
 

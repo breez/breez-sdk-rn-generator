@@ -46,8 +46,8 @@ class RNBreezSDK: RCTEventEmitter {
     {% include "TopLevelFunctionTemplate.swift" %}
     {% endif -%}
     {%- endfor %}  
-    @objc(defaultConfig:apiKey:nodeConfig:resolver:rejecter:)
-    func defaultConfig(_ envType: String, apiKey: String, nodeConfig: [String: Any], resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) -> Void {
+    @objc(defaultConfig:apiKey:nodeConfig:resolve:reject:)
+    func defaultConfig(_ envType: String, apiKey: String, nodeConfig: [String: Any], resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) -> Void {
         do {
             let envTypeTmp = try BreezSDKMapper.asEnvironmentType(type: envType)
             let nodeConfigTmp = try BreezSDKMapper.asNodeConfig(data: nodeConfig)
@@ -59,8 +59,8 @@ class RNBreezSDK: RCTEventEmitter {
         }
     }
 
-    @objc(startLogStream:rejecter:)
-    func startLogStream(_ resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) -> Void {
+    @objc(startLogStream:reject:)
+    func startLogStream(_ resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) -> Void {
         do {
             try BreezSDK.setLogStream(logStream: BreezSDKLogStream(emitter: self))            
             resolve(["status": "ok"])        
@@ -69,8 +69,8 @@ class RNBreezSDK: RCTEventEmitter {
         }
     }
     
-    @objc(connect:seed:resolver:rejecter:)
-    func connect(_ config:[String: Any], seed:[UInt8], resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) -> Void {
+    @objc(connect:seed:resolve:reject:)
+    func connect(_ config:[String: Any], seed:[UInt8], resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) -> Void {
         if self.breezServices != nil {
             reject(RNBreezSDK.TAG, "BreezServices already initialized", nil)
             return

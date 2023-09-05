@@ -117,6 +117,30 @@ impl RNBindingGenerator {
         Ok(())
     }
 
+    fn write_swift_extern_bindings(
+        &self,
+        ci: &ComponentInterface,
+        config: RNConfig,
+        base_output_path: &Utf8Path,
+    ) -> Result<()> {
+        // Create the path
+        let output_path = base_output_path.join(Utf8Path::new("ios/Sources/ios"));
+        // Generate and write the binding to file
+        let bindings_output = self::gen_swift::ExternGenerator::new(config.clone(), ci)
+            .render()
+            .map_err(anyhow::Error::new)?;
+        let bindings_file = self
+            .write_bindings(
+                &bindings_output,
+                &output_path,
+                Utf8Path::new("BreezSDK.m"),
+            )
+            .unwrap();
+        // Lint binding
+        self.lint_swift_bindings(&bindings_file);
+        Ok(())
+    }
+
     fn write_swift_module_bindings(
         &self,
         ci: &ComponentInterface,
@@ -236,6 +260,7 @@ impl BindingGenerator for RNBindingGenerator {
 
         // generate ios
         self.write_swift_mapper_bindings(&ci, config.clone(), out_dir)?;
+        self.write_swift_extern_bindings(&ci, config.clone(), out_dir)?;
         self.write_swift_module_bindings(&ci, config.clone(), out_dir)?;
 
         // generate typescript
