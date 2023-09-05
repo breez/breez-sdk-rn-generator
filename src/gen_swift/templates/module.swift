@@ -49,8 +49,9 @@ class RNBreezSDK: RCTEventEmitter {
     @objc(defaultConfig:apiKey:nodeConfig:resolver:rejecter:)
     func defaultConfig(_ envType: String, apiKey: String, nodeConfig: [String: Any], resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) -> Void {
         do {
-            let nodeConfigData = try BreezSDKMapper.asNodeConfig(data: nodeConfig)
-            var config = try BreezSDK.defaultConfig(envType: BreezSDKMapper.asEnvironmentType(type: envType), apiKey: apiKey, nodeConfig: nodeConfigData)
+            let envTypeTmp = try BreezSDKMapper.asEnvironmentType(type: envType)
+            let nodeConfigTmp = try BreezSDKMapper.asNodeConfig(data: nodeConfig)
+            var config = try BreezSDK.defaultConfig(envType: envTypeTmp, apiKey: apiKey, nodeConfig: nodeConfigTmp)
             config.workingDir = RNBreezSDK.breezSdkDirectory.path                
             resolve(BreezSDKMapper.dictionaryOf(config: config))
         } catch let err {
@@ -76,8 +77,8 @@ class RNBreezSDK: RCTEventEmitter {
         }
             
         do {
-            let config = try BreezSDKMapper.asConfig(data: config)
-            self.breezServices = try BreezSDK.connect(config: config, seed: seed, listener: BreezSDKListener(emitter: self))                
+            let configTmp = try BreezSDKMapper.asConfig(data: config)
+            self.breezServices = try BreezSDK.connect(config: configTmp, seed: seed, listener: BreezSDKListener(emitter: self))                
             resolve(["status": "ok"])
         } catch let err {
             rejectErr(err: err, reject: reject)

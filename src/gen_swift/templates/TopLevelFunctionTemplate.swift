@@ -4,6 +4,10 @@
         do {
 {%- for arg in func.arguments() -%}
     {%- match arg.type_() %}
+    {%- when Type::Enum(_) %}
+            let {{arg.name()|var_name|unquote|temporary}} = try BreezSDKMapper.as{{arg.type_()|type_name}}(type: {{ arg.name()|var_name|unquote }})
+    {%- when Type::Optional(_) %}
+            let {{arg.name()|var_name|unquote|temporary}} = {{ arg.type_()|rn_convert_type(arg.name()|var_name|unquote) -}}
     {%- when Type::Record(_) %}
             let {{arg.type_()|type_name|var_name|unquote}} = try BreezSDKMapper.as{{arg.type_()|type_name}}(data: {{ arg.name()|var_name|unquote }})
     {%- else %}

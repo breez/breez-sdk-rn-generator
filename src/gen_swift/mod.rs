@@ -174,15 +174,15 @@ pub mod filters {
                     | Type::UInt32
                     | Type::Int64
                     | Type::UInt64 => format!(
-                        "({} == 0 ? nil : {})",
+                        "{} == 0 ? nil : {}",
                         converted_var_name, converted_var_name
                     ),
                     Type::Float32 | Type::Float64 => format!(
-                        "({} == 0.0 ? nil : {})",
+                        "{} == 0.0 ? nil : {}",
                         converted_var_name, converted_var_name
                     ),
                     Type::String => format!(
-                        "({}.isEmpty ? nil : {})",
+                        "{}.isEmpty ? nil : {}",
                         converted_var_name, converted_var_name
                     ),
                     _ => "".to_string(),
