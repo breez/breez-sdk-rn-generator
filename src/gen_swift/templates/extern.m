@@ -9,22 +9,22 @@
 {%- endfor %}  
 RCT_EXTERN_METHOD(
     startLogStream: (RCTPromiseResolveBlock)resolve
-    rejecter: (RCTPromiseRejectBlock)reject
+    reject: (RCTPromiseRejectBlock)reject
 )
 
 RCT_EXTERN_METHOD(
     defaultConfig: (NSString*)envType
     apiKey:(NSString*)apiKey
-    nodeConfigMap: (NSDictionary*)nodeConfigMap
-    resolver: (RCTPromiseResolveBlock)resolve
-    rejecter: (RCTPromiseRejectBlock)reject
+    nodeConfig: (NSDictionary*)nodeConfig
+    resolve: (RCTPromiseResolveBlock)resolve
+    reject: (RCTPromiseRejectBlock)reject
 )
 
 RCT_EXTERN_METHOD(
     connect: (NSDictionary*)config
     seed: (NSArray*)seed
-    resolver: (RCTPromiseResolveBlock)resolve
-    rejecter: (RCTPromiseRejectBlock)reject
+    resolve: (RCTPromiseResolveBlock)resolve
+    reject: (RCTPromiseRejectBlock)reject
 )
 {%- for type_ in ci.iter_types() %}
 {%- let type_name = type_|type_name %}

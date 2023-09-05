@@ -72,13 +72,6 @@ pub mod filters {
         Ok(oracle().fn_name(nm))
     }
 
-    pub fn render_literal(
-        literal: &Literal,
-        codetype: &impl CodeType,
-    ) -> Result<String, askama::Error> {
-        Ok(codetype.literal(oracle(), literal))
-    }
-
     pub fn render_to_map(
         t: &TypeIdentifier,
         ci: &ComponentInterface,
@@ -113,27 +106,21 @@ pub mod filters {
             Type::Timestamp => unimplemented!("render_to_map: Timestamp is not implemented"),
             Type::Duration => unimplemented!("render_to_map: Duration is not implemented"),
             Type::Object(_) => unimplemented!("render_to_map: Object is not implemented"),
-            Type::Record(_) => match optional {
-                true => Ok(format!("{obj_prefix}{field_name} == nil ? nil : {{ dictionaryOf({var_name}: {obj_prefix}{field_name}!) }}").into()),
-                false => Ok(format!("dictionaryOf({var_name}: {obj_prefix}{field_name})").into()),
-            },
+            Type::Record(_) => Ok(format!(
+                "dictionaryOf({var_name}: {obj_prefix}{field_name}{optional_suffix})"
+            )
+            .into()),
             Type::Enum(inner) => {
                 let enum_def = ci.get_enum_definition(inner).unwrap();
-                //let type_name = enum_def
                 match enum_def.is_flat() {
-                    true => match optional {
-                        true => Ok(format!(
-                            "valueOf( {var_name}:  {obj_prefix}{field_name}!)"
-                        )
-                        .into()),
-                        false => Ok(format!("valueOf( {var_name}: {obj_prefix}{field_name})").into()),
-                    },
-                    false => match optional {
-                        true => Ok(
-                            format!("dictionaryOf({var_name}: {obj_prefix}{field_name}!)").into(),
-                        ),
-                        false => Ok(format!("dictionaryOf({var_name}: {obj_prefix}{field_name})").into()),
-                    },
+                    true => Ok(format!(
+                        "valueOf( {var_name}: {obj_prefix}{field_name}{optional_suffix})"
+                    )
+                    .into()),
+                    false => Ok(format!(
+                        "dictionaryOf({var_name}: {obj_prefix}{field_name}{optional_suffix})"
+                    )
+                    .into()),
                 }
             }
             Type::Error(_) => unimplemented!("render_to_map: Error is not implemented"),
@@ -143,7 +130,9 @@ pub mod filters {
             Type::Optional(inner) => {
                 let unboxed = inner.as_ref();
                 let inner_render = render_to_map(unboxed, ci, obj_name, field_name, true)?;
-                Ok(format!("{obj_prefix}{field_name} == nil ? nil : {inner_render}"))
+                Ok(format!(
+                    "{obj_prefix}{field_name} == nil ? nil : {inner_render}"
+                ))
             }
             Type::Sequence(inner) => {
                 let unboxed = inner.as_ref();
@@ -151,12 +140,16 @@ pub mod filters {
                 let var_name = filters::var_name(type_name.as_str())?;
                 let var_name = filters::unquote(var_name.as_str())?;
                 let as_array_statment = match unboxed {
-                    Type::Record(_) => format!("arrayOf({var_name}List: {obj_prefix}{field_name}{optional_suffix})"),
-                    Type::Enum(_) => format!("arrayOf({var_name}List: {obj_prefix}{field_name}{optional_suffix})"),
-                    _ => format!("{obj_prefix}{field_name}")
+                    Type::Record(_) => format!(
+                        "arrayOf({var_name}List: {obj_prefix}{field_name}{optional_suffix})"
+                    ),
+                    Type::Enum(_) => format!(
+                        "arrayOf({var_name}List: {obj_prefix}{field_name}{optional_suffix})"
+                    ),
+                    _ => format!("{obj_prefix}{field_name}"),
                 };
                 Ok(as_array_statment)
-            },
+            }
             Type::Map(_, _) => unimplemented!("render_to_map: Map is not implemented"),
             Type::External { .. } => {
                 unimplemented!("render_to_map: External is not implemented")
@@ -186,10 +179,9 @@ pub mod filters {
                     | Type::Int32
                     | Type::UInt32
                     | Type::Int64
-                    | Type::UInt64 => format!(
-                        "{} == 0 ? nil : {}",
-                        converted_var_name, converted_var_name
-                    ),
+                    | Type::UInt64 => {
+                        format!("{} == 0 ? nil : {}", converted_var_name, converted_var_name)
+                    }
                     Type::Float32 | Type::Float64 => format!(
                         "{} == 0.0 ? nil : {}",
                         converted_var_name, converted_var_name
@@ -267,13 +259,9 @@ pub mod filters {
         }
     }
 
-    pub fn extern_type_name(
-        t: &TypeIdentifier,
-    ) -> Result<String, askama::Error> {
+    pub fn extern_type_name(t: &TypeIdentifier) -> Result<String, askama::Error> {
         match t {
-            Type::Int8 | Type::Int16 | Type::Int32 | Type::UInt32 | Type::Int64 => {
-                Ok("NSInteger*".to_string())
-            }
+            Type::Int8 | Type::Int16 | Type::Int32 | Type::Int64 => Ok("NSInteger*".to_string()),
             Type::UInt8 | Type::UInt16 | Type::UInt32 | Type::UInt64 => {
                 Ok("NSUInteger*".to_string())
             }

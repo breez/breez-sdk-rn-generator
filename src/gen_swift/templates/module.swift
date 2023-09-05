@@ -51,7 +51,7 @@ class RNBreezSDK: RCTEventEmitter {
         do {
             let envTypeTmp = try BreezSDKMapper.asEnvironmentType(type: envType)
             let nodeConfigTmp = try BreezSDKMapper.asNodeConfig(data: nodeConfig)
-            var config = try BreezSDK.defaultConfig(envType: envTypeTmp, apiKey: apiKey, nodeConfig: nodeConfigTmp)
+            var config = BreezSDK.defaultConfig(envType: envTypeTmp, apiKey: apiKey, nodeConfig: nodeConfigTmp)
             config.workingDir = RNBreezSDK.breezSdkDirectory.path                
             resolve(BreezSDKMapper.dictionaryOf(config: config))
         } catch let err {
