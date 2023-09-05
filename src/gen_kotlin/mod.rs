@@ -84,13 +84,6 @@ pub mod filters {
         Ok(oracle().fn_name(nm))
     }
 
-    pub fn render_literal(
-        literal: &Literal,
-        codetype: &impl CodeType,
-    ) -> Result<String, askama::Error> {
-        Ok(codetype.literal(oracle(), literal))
-    }
-
     pub fn render_to_array(type_name: &str) -> Result<String, askama::Error> {
         let res: Result<String, askama::Error> = match type_name {
             "Boolean" => Ok(format!("array.pushBoolean(value)").into()),
