@@ -1,5 +1,4 @@
-{% import "macros.kt" as kt %}
-
+{%- import "macros.kt" as kt -%}
 package com.breezsdk
 import breez_sdk.*
 import com.facebook.react.bridge.*

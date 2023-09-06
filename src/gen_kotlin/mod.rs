@@ -191,8 +191,8 @@ pub mod filters {
             Type::Int16 => format!("data.getInt(\"{name}\").toShort()").into(),
             Type::UInt32 => format!("data.getInt(\"{name}\").toUInt()").into(),
             Type::Int32 => format!("data.getInt(\"{name}\")").into(),
-            Type::UInt64 => format!("data.getInt(\"{name}\").toULong()").into(),
-            Type::Int64 => format!("data.getInt(\"{name}\").toLong()").into(),
+            Type::UInt64 => format!("data.getDouble(\"{name}\").toULong()").into(),
+            Type::Int64 => format!("data.getDouble(\"{name}\").toLong()").into(),
             Type::Float32 => format!("data.getDouble(\"{name}\")").into(),
             Type::Float64 => format!("data.getDouble(\"{name}\")").into(),
             Type::Boolean => format!("data.getBoolean(\"{name}\")").into(),
@@ -225,7 +225,7 @@ pub mod filters {
             Type::Optional(inner) => {
                 let unboxed = inner.as_ref();
                 let inner_res = render_from_map(unboxed, ci, name, true)?;
-                inner_res
+                format!("if (hasNonNullKey(data, \"{name}\")) {inner_res} else null")
             }
             Type::Sequence(inner) => {
                 let unboxed = inner.as_ref();
@@ -271,9 +271,9 @@ pub mod filters {
                     | Type::Int16
                     | Type::UInt16
                     | Type::Int32
-                    | Type::UInt32
-                    | Type::Int64
-                    | Type::UInt64 => ".takeUnless { it == 0 }".to_string(),
+                    | Type::UInt32 => ".takeUnless { it == 0 }".to_string(),
+                    Type::Int64 => ".takeUnless { it == 0L }".to_string(),
+                    Type::UInt64 => ".takeUnless { it == 0UL }".to_string(),
                     Type::Float32 | Type::Float64 => ".takeUnless { it == 0.0 }".to_string(),
                     Type::String => ".takeUnless { it.isEmpty() }".to_string(),
                     _ => "".to_string(),

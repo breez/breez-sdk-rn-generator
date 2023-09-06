@@ -9,7 +9,7 @@
         {%- when Type::Record(_) -%}
         {{ arg.type_()|type_name|var_name|unquote -}}
         {%- else -%}
-        {{ arg.name()|var_name|unquote }}
+        {{ arg.name()|var_name|unquote }}{{ arg.type_()|rn_convert_type(ci) -}}
         {%- endmatch -%}
         {%- if !loop.last %}, {% endif -%}
     {%- endfor %}

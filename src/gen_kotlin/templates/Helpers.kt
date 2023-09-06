@@ -6,9 +6,13 @@ fun readableMapOf(vararg values: Pair<String, *>): ReadableMap {
     return map
 }
 
+fun hasNonNullKey(map: ReadableMap, key: String): Boolean {
+    return map.hasKey(key) && !map.isNull(key)
+}
+
 fun validateMandatoryFields(map: ReadableMap, keys: Array<String>): Boolean {
     for (k in keys) {
-        if (!map.hasKey(k) || map.isNull(k)) return false
+        if (!hasNonNullKey(map, k)) return false
     }
 
     return true

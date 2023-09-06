@@ -72,7 +72,7 @@ class BreezSDKModule(reactContext: ReactApplicationContext) : ReactContextBaseJa
     @ReactMethod
     fun startLogStream(promise: Promise) {
         try {
-            val emitter = ReactApplicationContext.getJSModule(RCTDeviceEventEmitter::class.java)
+            val emitter = reactApplicationContext.getJSModule(RCTDeviceEventEmitter::class.java)
 
             setLogStream(BreezSDKLogStream(emitter))
             promise.resolve(readableMapOf("status" to "ok"))
