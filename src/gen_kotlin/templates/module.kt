@@ -49,7 +49,7 @@ class BreezSDKModule(reactContext: ReactApplicationContext) : ReactContextBaseJa
     {% endif -%}
     {%- endfor %}  
     @ReactMethod
-    fun startLogStream(promise: Promise) {
+    fun setLogStream(promise: Promise) {
         try {
             val emitter = reactApplicationContext.getJSModule(RCTDeviceEventEmitter::class.java)
 

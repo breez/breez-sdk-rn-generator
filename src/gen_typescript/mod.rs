@@ -182,6 +182,29 @@ pub mod filters {
         Ok(oracle().enum_variant_name(nm))
     }
 
+    pub fn absolute_type_name(t: &TypeIdentifier) -> Result<String, askama::Error> {
+        let res: Result<String, askama::Error> = match t {
+            Type::Optional(inner) => {
+                let unboxed = inner.as_ref();
+                type_name(unboxed)
+            }
+            _ => type_name(t),
+        };
+        res    
+    }
+
+    pub fn return_type_name(t: &TypeIdentifier) -> Result<String, askama::Error> {
+        let res: Result<String, askama::Error> = match t {
+            Type::Optional(inner) => {
+                let unboxed = inner.as_ref();
+                let name = type_name(unboxed)?;
+                Ok(format!("{name} | null"))
+            }
+            _ => type_name(t),
+        };
+        res    
+    }
+
     pub fn default_value(t: &TypeIdentifier) -> Result<String, askama::Error> {
         let res: Result<String, askama::Error> = match t {
             Type::Optional(inner) => {
