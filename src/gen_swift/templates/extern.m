@@ -8,7 +8,7 @@
 {% endif %}
 {%- endfor %}  
 RCT_EXTERN_METHOD(
-    startLogStream: (RCTPromiseResolveBlock)resolve
+    setLogStream: (RCTPromiseResolveBlock)resolve
     reject: (RCTPromiseRejectBlock)reject
 )
 

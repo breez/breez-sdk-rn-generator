@@ -46,8 +46,8 @@ class RNBreezSDK: RCTEventEmitter {
     {% include "TopLevelFunctionTemplate.swift" %}
     {% endif -%}
     {%- endfor %}  
-    @objc(startLogStream:reject:)
-    func startLogStream(_ resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) -> Void {
+    @objc(setLogStream:reject:)
+    func setLogStream(_ resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) -> Void {
         do {
             try BreezSDK.setLogStream(logStream: BreezSDKLogStream(emitter: self))            
             resolve(["status": "ok"])        
