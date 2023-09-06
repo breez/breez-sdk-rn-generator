@@ -4,8 +4,13 @@
         do {
 {%- for arg in func.arguments() -%}
     {%- match arg.type_() %}
-    {%- when Type::Enum(_) %}
+    {%- when Type::Enum(inner) %}
+        {%- let e = ci.get_enum_definition(inner).unwrap() %}
+        {%- if e.is_flat() %}
             let {{arg.name()|var_name|unquote|temporary}} = try BreezSDKMapper.as{{arg.type_()|type_name}}(type: {{ arg.name()|var_name|unquote }})
+        {%- else %}
+            let {{arg.name()|var_name|unquote|temporary}} = try BreezSDKMapper.as{{arg.type_()|type_name}}(data: {{ arg.name()|var_name|unquote }})
+        {%- endif %}
     {%- when Type::Optional(_) %}
             let {{arg.name()|var_name|unquote|temporary}} = {{ arg.type_()|rn_convert_type(arg.name()|var_name|unquote) -}}
     {%- when Type::Record(_) %}
@@ -15,14 +20,17 @@
 {%- endfor %}
 {%- match func.return_type() -%}
 {%- when Some with (return_type) %}
-            let res = try {{ obj_interface }}{{ func.name()|fn_name|unquote }}({%- call swift::arg_list(func) -%})
+            var res = {%- call swift::throws_decl(func) -%}{{ obj_interface }}{{ func.name()|fn_name|unquote }}({%- call swift::arg_list(func) -%})
+{%- if func.name() == "default_config" %}
+            res.workingDir = RNBreezSDK.breezSdkDirectory.path                
+{%- endif -%}
     {%- match return_type %}
     {%- when Type::Optional(inner) %}
         {%- let unboxed = inner.as_ref() %}
             if res != nil {
                 resolve({{ unboxed|rn_return_type(unboxed|type_name|var_name|unquote, true) }})
             } else {
-                rejectErr(err: SdkError.Generic(message: "No result found"), reject: reject)
+                resolve(nil)
             }
     {%- else %}
             resolve({{ return_type|rn_return_type(return_type|type_name|var_name|unquote, false) }})

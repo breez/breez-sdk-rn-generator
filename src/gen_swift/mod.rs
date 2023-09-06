@@ -9,7 +9,7 @@ use crate::generator::RNConfig;
 pub use uniffi_bindgen::bindings::swift::gen_swift::*;
 
 static IGNORED_FUNCTIONS: Lazy<HashSet<String>> = Lazy::new(|| {
-    let list = vec!["connect", "default_config", "set_log_stream"];
+    let list = vec!["connect", "set_log_stream"];
     HashSet::from_iter(list.into_iter().map(|s| s.to_string()))
 });
 
@@ -259,18 +259,28 @@ pub mod filters {
         }
     }
 
-    pub fn extern_type_name(t: &TypeIdentifier) -> Result<String, askama::Error> {
+    pub fn extern_type_name(
+        t: &TypeIdentifier,
+        ci: &ComponentInterface,
+    ) -> Result<String, askama::Error> {
         match t {
             Type::Int8 | Type::Int16 | Type::Int32 | Type::Int64 => Ok("NSInteger*".to_string()),
             Type::UInt8 | Type::UInt16 | Type::UInt32 | Type::UInt64 => {
                 Ok("NSUInteger*".to_string())
             }
             Type::Float32 | Type::Float64 => Ok("NSNumber*".to_string()),
-            Type::String | Type::Enum(_) => Ok("NSString*".to_string()),
+            Type::String => Ok("NSString*".to_string()),
+            Type::Enum(inner) => {
+                let enum_def = ci.get_enum_definition(inner).unwrap();
+                match enum_def.is_flat() {
+                    false => Ok("NSDictionary*".to_string()),
+                    true => Ok("NSString*".to_string()),
+                }
+            }
             Type::Record(_) => Ok("NSDictionary*".to_string()),
             Type::Optional(inner) => {
                 let unboxed = inner.as_ref();
-                extern_type_name(unboxed)
+                extern_type_name(unboxed, ci)
             }
             Type::Sequence(_) => Ok("NSArray*".to_string()),
             _ => Ok("".to_string()),

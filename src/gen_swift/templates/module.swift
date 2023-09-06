@@ -46,19 +46,6 @@ class RNBreezSDK: RCTEventEmitter {
     {% include "TopLevelFunctionTemplate.swift" %}
     {% endif -%}
     {%- endfor %}  
-    @objc(defaultConfig:apiKey:nodeConfig:resolve:reject:)
-    func defaultConfig(_ envType: String, apiKey: String, nodeConfig: [String: Any], resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) -> Void {
-        do {
-            let envTypeTmp = try BreezSDKMapper.asEnvironmentType(type: envType)
-            let nodeConfigTmp = try BreezSDKMapper.asNodeConfig(data: nodeConfig)
-            var config = BreezSDK.defaultConfig(envType: envTypeTmp, apiKey: apiKey, nodeConfig: nodeConfigTmp)
-            config.workingDir = RNBreezSDK.breezSdkDirectory.path                
-            resolve(BreezSDKMapper.dictionaryOf(config: config))
-        } catch let err {
-            rejectErr(err: err, reject: reject)
-        }
-    }
-
     @objc(startLogStream:reject:)
     func startLogStream(_ resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) -> Void {
         do {

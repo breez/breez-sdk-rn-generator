@@ -34,3 +34,9 @@
         {{ f.name()|var_name|unquote }}: {{ f.name()|var_name|unquote }}{%- if !loop.last %}, {% endif -%}
     {%- endfor %}
 {%- endmacro -%}
+
+{%- macro throws_decl(func) %}
+	{%- match func.throws_type() -%}
+	{%- when Some with (throws_type) -%}try {% else -%}
+	{%- endmatch -%}
+{%- endmacro -%}
