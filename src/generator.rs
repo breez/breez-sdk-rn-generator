@@ -100,7 +100,7 @@ impl RNBindingGenerator {
         base_output_path: &Utf8Path,
     ) -> Result<()> {
         // Create the path
-        let output_path = base_output_path.join(Utf8Path::new("ios/Sources/ios"));
+        let output_path = base_output_path.join(Utf8Path::new("ios"));
         // Generate and write the binding to file
         let bindings_output = self::gen_swift::MapperGenerator::new(config.clone(), ci)
             .render()
@@ -124,7 +124,7 @@ impl RNBindingGenerator {
         base_output_path: &Utf8Path,
     ) -> Result<()> {
         // Create the path
-        let output_path = base_output_path.join(Utf8Path::new("ios/Sources/ios"));
+        let output_path = base_output_path.join(Utf8Path::new("ios"));
         // Generate and write the binding to file
         let bindings_output = self::gen_swift::ExternGenerator::new(config.clone(), ci)
             .render()
@@ -133,7 +133,7 @@ impl RNBindingGenerator {
             .write_bindings(
                 &bindings_output,
                 &output_path,
-                Utf8Path::new("BreezSDK.m"),
+                Utf8Path::new("RNBreezSDK.m"),
             )
             .unwrap();
         // Lint binding
@@ -148,7 +148,7 @@ impl RNBindingGenerator {
         base_output_path: &Utf8Path,
     ) -> Result<()> {
         // Create the path
-        let output_path = base_output_path.join(Utf8Path::new("ios/Sources/ios"));
+        let output_path = base_output_path.join(Utf8Path::new("ios"));
         // Generate and write the binding to file
         let bindings_output = self::gen_swift::ModuleGenerator::new(config.clone(), ci)
             .render()
@@ -157,7 +157,7 @@ impl RNBindingGenerator {
             .write_bindings(
                 &bindings_output,
                 &output_path,
-                Utf8Path::new("BreezSDK.swift"),
+                Utf8Path::new("RNBreezSDK.swift"),
             )
             .unwrap();
         // Lint binding
