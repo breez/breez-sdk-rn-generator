@@ -26,7 +26,7 @@
 
 {% macro arg_list_decl(func) %}
     {%- for arg in func.arguments() -%}
-        {{ arg.name()|var_name }}: {{ arg|type_name }}{{- arg.type_()|default_value -}}
+        {{ arg.name()|var_name }}: {{ arg.type_()|absolute_type_name }}{{- arg.type_()|default_value -}}
         {%- if !loop.last %}, {% endif -%}
     {%- endfor %}
 {%- endmacro %}

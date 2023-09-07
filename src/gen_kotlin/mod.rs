@@ -1,23 +1,29 @@
 use std::cell::RefCell;
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashSet};
 
 use askama::Template;
+use once_cell::sync::Lazy;
 use uniffi_bindgen::interface::*;
 
 pub use uniffi_bindgen::bindings::kotlin::gen_kotlin::*;
 
 use crate::generator::RNConfig;
 
+static IGNORED_FUNCTIONS: Lazy<HashSet<String>> = Lazy::new(|| {
+    let list = vec!["connect", "set_log_stream"];
+    HashSet::from_iter(list.into_iter().map(|s| s.to_string()))
+});
+
 #[derive(Template)]
-#[template(syntax = "rn", escape = "none", path = "wrapper.kt")]
-pub struct Generator<'a> {
+#[template(syntax = "rn", escape = "none", path = "mapper.kt")]
+pub struct MapperGenerator<'a> {
     config: RNConfig,
     ci: &'a ComponentInterface,
     // Track types used in sequences with the `add_sequence_type()` macro
     sequence_types: RefCell<BTreeSet<String>>,
 }
 
-impl<'a> Generator<'a> {
+impl<'a> MapperGenerator<'a> {
     pub fn new(config: RNConfig, ci: &'a ComponentInterface) -> Self {
         Self {
             config,
@@ -46,8 +52,22 @@ impl<'a> Generator<'a> {
     }
 }
 
+#[derive(Template)]
+#[template(syntax = "rn", escape = "none", path = "module.kt")]
+pub struct ModuleGenerator<'a> {
+    config: RNConfig,
+    ci: &'a ComponentInterface,
+}
+
+impl<'a> ModuleGenerator<'a> {
+    pub fn new(config: RNConfig, ci: &'a ComponentInterface) -> Self {
+        Self { config, ci }
+    }
+}
+
 pub mod filters {
     use heck::*;
+    use uniffi_bindgen::backend::CodeOracle;
     use uniffi_bindgen::backend::{CodeType, TypeIdentifier};
 
     use super::*;
@@ -58,6 +78,10 @@ pub mod filters {
 
     pub fn type_name(codetype: &impl CodeType) -> Result<String, askama::Error> {
         Ok(codetype.type_label(oracle()))
+    }
+
+    pub fn fn_name(nm: &str) -> Result<String, askama::Error> {
+        Ok(oracle().fn_name(nm))
     }
 
     pub fn render_to_array(type_name: &str) -> Result<String, askama::Error> {
@@ -167,8 +191,8 @@ pub mod filters {
             Type::Int16 => format!("data.getInt(\"{name}\").toShort()").into(),
             Type::UInt32 => format!("data.getInt(\"{name}\").toUInt()").into(),
             Type::Int32 => format!("data.getInt(\"{name}\")").into(),
-            Type::UInt64 => format!("data.getInt(\"{name}\").toULong()").into(),
-            Type::Int64 => format!("data.getInt(\"{name}\").toLong()").into(),
+            Type::UInt64 => format!("data.getDouble(\"{name}\").toULong()").into(),
+            Type::Int64 => format!("data.getDouble(\"{name}\").toLong()").into(),
             Type::Float32 => format!("data.getDouble(\"{name}\")").into(),
             Type::Float64 => format!("data.getDouble(\"{name}\")").into(),
             Type::Boolean => format!("data.getBoolean(\"{name}\")").into(),
@@ -201,7 +225,7 @@ pub mod filters {
             Type::Optional(inner) => {
                 let unboxed = inner.as_ref();
                 let inner_res = render_from_map(unboxed, ci, name, true)?;
-                inner_res
+                format!("if (hasNonNullKey(data, \"{name}\")) {inner_res} else null")
             }
             Type::Sequence(inner) => {
                 let unboxed = inner.as_ref();
@@ -223,5 +247,71 @@ pub mod filters {
 
     pub fn unquote(nm: &str) -> Result<String, askama::Error> {
         Ok(nm.trim_matches('`').to_string())
+    }
+
+    pub fn ignored_function(nm: &str) -> Result<bool, askama::Error> {
+        Ok(IGNORED_FUNCTIONS.contains(nm))
+    }
+
+    pub fn rn_convert_type(
+        t: &TypeIdentifier,
+        ci: &ComponentInterface,
+    ) -> Result<String, askama::Error> {
+        match t {
+            Type::UInt8 | Type::UInt16 | Type::UInt32 => Ok(".toUInt()".to_string()),
+            Type::Int64 => Ok(".toLong()".to_string()),
+            Type::UInt64 => Ok(".toULong()".to_string()),
+            Type::Float32 | Type::Float64 => Ok(".toFloat()".to_string()),
+            Type::Optional(inner) => {
+                let unboxed = inner.as_ref();
+                let conversion = rn_convert_type(unboxed, ci).unwrap();
+                let optional = match *unboxed {
+                    Type::Int8
+                    | Type::UInt8
+                    | Type::Int16
+                    | Type::UInt16
+                    | Type::Int32
+                    | Type::UInt32 => ".takeUnless { it == 0 }".to_string(),
+                    Type::Int64 => ".takeUnless { it == 0L }".to_string(),
+                    Type::UInt64 => ".takeUnless { it == 0UL }".to_string(),
+                    Type::Float32 | Type::Float64 => ".takeUnless { it == 0.0 }".to_string(),
+                    Type::String => ".takeUnless { it.isEmpty() }".to_string(),
+                    _ => "".to_string(),
+                };
+                Ok(format!("{}{}", conversion, optional))
+            }
+            _ => Ok("".to_string()),
+        }
+    }
+
+    pub fn rn_type_name(
+        t: &TypeIdentifier,
+        ci: &ComponentInterface,
+    ) -> Result<String, askama::Error> {
+        match t {
+            Type::Int8 | Type::UInt8 | Type::Int16 | Type::UInt16 | Type::Int32 | Type::UInt32 => {
+                Ok("Int".to_string())
+            }
+            Type::Int64 | Type::UInt64 | Type::Float32 | Type::Float64 => Ok("Double".to_string()),
+            Type::String => Ok("String".to_string()),
+            Type::Enum(inner) => {
+                let enum_def = ci.get_enum_definition(inner).unwrap();
+                match enum_def.is_flat() {
+                    false => Ok("ReadableMap".to_string()),
+                    true => Ok("String".to_string()),
+                }
+            }
+            Type::Record(_) => Ok("ReadableMap".to_string()),
+            Type::Optional(inner) => {
+                let unboxed = inner.as_ref();
+                rn_type_name(unboxed, ci)
+            }
+            Type::Sequence(_) => Ok("ReadableArray".to_string()),
+            _ => Ok("".to_string()),
+        }
+    }
+
+    pub fn temporary(nm: &str) -> Result<String, askama::Error> {
+        Ok(format!("{nm}Tmp"))
     }
 }

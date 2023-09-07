@@ -33,13 +33,13 @@ static IGNORED_FUNCTIONS: Lazy<HashSet<String>> = Lazy::new(|| {
 });
 
 #[derive(Template)]
-#[template(syntax = "rn", escape = "none", path = "wrapper.ts")]
-pub struct Generator<'a> {
+#[template(syntax = "rn", escape = "none", path = "module.ts")]
+pub struct ModuleGenerator<'a> {
     config: RNConfig,
     ci: &'a ComponentInterface,
 }
 
-impl<'a> Generator<'a> {
+impl<'a> ModuleGenerator<'a> {
     pub fn new(config: RNConfig, ci: &'a ComponentInterface) -> Self {
         Self { config, ci }
     }
@@ -180,6 +180,29 @@ pub mod filters {
     /// Get the idiomatic Typescript rendering of an individual enum variant.
     pub fn enum_variant(nm: &str) -> Result<String, askama::Error> {
         Ok(oracle().enum_variant_name(nm))
+    }
+
+    pub fn absolute_type_name(t: &TypeIdentifier) -> Result<String, askama::Error> {
+        let res: Result<String, askama::Error> = match t {
+            Type::Optional(inner) => {
+                let unboxed = inner.as_ref();
+                type_name(unboxed)
+            }
+            _ => type_name(t),
+        };
+        res    
+    }
+
+    pub fn return_type_name(t: &TypeIdentifier) -> Result<String, askama::Error> {
+        let res: Result<String, askama::Error> = match t {
+            Type::Optional(inner) => {
+                let unboxed = inner.as_ref();
+                let name = type_name(unboxed)?;
+                Ok(format!("{name} | null"))
+            }
+            _ => type_name(t),
+        };
+        res    
     }
 
     pub fn default_value(t: &TypeIdentifier) -> Result<String, askama::Error> {

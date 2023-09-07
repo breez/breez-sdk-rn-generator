@@ -18,7 +18,7 @@ fun as{{ type_name }}(data: ReadableMap): {{ type_name }}? {
             return {{ type_name }}.{{ variant.name() }}          
             {%- endif %}       
         }        
-    {%- endfor %}    
+    {% endfor -%}    
 
     return null
 }

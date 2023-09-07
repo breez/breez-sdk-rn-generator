@@ -3,8 +3,9 @@
 {%- match type_ %}
 {%- when Type::Object ( name ) %}
 {% let obj = ci.get_object_definition(name).unwrap() %}
+{% let obj_interface = "getBreezServices()." %}
 {%- for func in obj.methods() -%}
-{%- include "TopLevelFunctionTemplate.ts" %}
+{%- include "TopLevelFunctionTemplate.kt" %}
 {% endfor %}
 {%- else -%}
 {%- endmatch -%}    

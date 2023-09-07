@@ -23,7 +23,7 @@ const BreezSDKEmitter = new NativeEventEmitter(BreezSDK)
 {% include "Helpers.ts" %}
 {% for func in ci.function_definitions() %}
 {%- if func.name()|ignored_function == false -%}
-{%- include "Function.ts" %}
+{%- include "TopLevelFunctionTemplate.ts" %}
 {% endif -%}
 {% endfor -%}
 {%- include "Objects.ts" %}
