@@ -1,7 +1,17 @@
+use std::collections::HashSet;
+
 use askama::Template;
+use once_cell::sync::Lazy;
 use uniffi_bindgen::interface::*;
 
 use crate::generator::RNConfig;
+
+pub use uniffi_bindgen::bindings::swift::gen_swift::*;
+
+static IGNORED_FUNCTIONS: Lazy<HashSet<String>> = Lazy::new(|| {
+    let list = vec!["connect", "set_log_stream"];
+    HashSet::from_iter(list.into_iter().map(|s| s.to_string()))
+});
 
 #[derive(Template)]
 #[template(syntax = "rn", escape = "none", path = "mapper.swift")]
@@ -16,13 +26,37 @@ impl<'a> MapperGenerator<'a> {
     }
 }
 
+#[derive(Template)]
+#[template(syntax = "rn", escape = "none", path = "extern.m")]
+pub struct ExternGenerator<'a> {
+    config: RNConfig,
+    ci: &'a ComponentInterface,
+}
+
+impl<'a> ExternGenerator<'a> {
+    pub fn new(config: RNConfig, ci: &'a ComponentInterface) -> Self {
+        Self { config, ci }
+    }
+}
+
+#[derive(Template)]
+#[template(syntax = "rn", escape = "none", path = "module.swift")]
+pub struct ModuleGenerator<'a> {
+    config: RNConfig,
+    ci: &'a ComponentInterface,
+}
+
+impl<'a> ModuleGenerator<'a> {
+    pub fn new(config: RNConfig, ci: &'a ComponentInterface) -> Self {
+        Self { config, ci }
+    }
+}
+
 pub mod filters {
 
     use heck::*;
-    use uniffi_bindgen::{
-        backend::{CodeType, TypeIdentifier},
-        bindings::swift::gen_swift::SwiftCodeOracle,
-    };
+    use uniffi_bindgen::backend::CodeOracle;
+    use uniffi_bindgen::backend::{CodeType, TypeIdentifier};
 
     use super::*;
 
@@ -32,6 +66,10 @@ pub mod filters {
 
     pub fn type_name(codetype: &impl CodeType) -> Result<String, askama::Error> {
         Ok(codetype.type_label(oracle()))
+    }
+
+    pub fn fn_name(nm: &str) -> Result<String, askama::Error> {
+        Ok(oracle().fn_name(nm))
     }
 
     pub fn render_to_map(
@@ -68,27 +106,21 @@ pub mod filters {
             Type::Timestamp => unimplemented!("render_to_map: Timestamp is not implemented"),
             Type::Duration => unimplemented!("render_to_map: Duration is not implemented"),
             Type::Object(_) => unimplemented!("render_to_map: Object is not implemented"),
-            Type::Record(_) => match optional {
-                true => Ok(format!("{obj_prefix}{field_name} == nil ? nil : {{ dictionaryOf({var_name}: {obj_prefix}{field_name}!) }}").into()),
-                false => Ok(format!("dictionaryOf({var_name}: {obj_prefix}{field_name})").into()),
-            },
+            Type::Record(_) => Ok(format!(
+                "dictionaryOf({var_name}: {obj_prefix}{field_name}{optional_suffix})"
+            )
+            .into()),
             Type::Enum(inner) => {
                 let enum_def = ci.get_enum_definition(inner).unwrap();
-                //let type_name = enum_def
                 match enum_def.is_flat() {
-                    true => match optional {
-                        true => Ok(format!(
-                            "valueOf( {var_name}:  {obj_prefix}{field_name}!)"
-                        )
-                        .into()),
-                        false => Ok(format!("valueOf( {var_name}: {obj_prefix}{field_name})").into()),
-                    },
-                    false => match optional {
-                        true => Ok(
-                            format!("dictionaryOf({var_name}: {obj_prefix}{field_name}!)").into(),
-                        ),
-                        false => Ok(format!("dictionaryOf({var_name}: {obj_prefix}{field_name})").into()),
-                    },
+                    true => Ok(format!(
+                        "valueOf( {var_name}: {obj_prefix}{field_name}{optional_suffix})"
+                    )
+                    .into()),
+                    false => Ok(format!(
+                        "dictionaryOf({var_name}: {obj_prefix}{field_name}{optional_suffix})"
+                    )
+                    .into()),
                 }
             }
             Type::Error(_) => unimplemented!("render_to_map: Error is not implemented"),
@@ -98,7 +130,9 @@ pub mod filters {
             Type::Optional(inner) => {
                 let unboxed = inner.as_ref();
                 let inner_render = render_to_map(unboxed, ci, obj_name, field_name, true)?;
-                Ok(format!("{obj_prefix}{field_name} == nil ? nil : {inner_render}"))
+                Ok(format!(
+                    "{obj_prefix}{field_name} == nil ? nil : {inner_render}"
+                ))
             }
             Type::Sequence(inner) => {
                 let unboxed = inner.as_ref();
@@ -106,12 +140,16 @@ pub mod filters {
                 let var_name = filters::var_name(type_name.as_str())?;
                 let var_name = filters::unquote(var_name.as_str())?;
                 let as_array_statment = match unboxed {
-                    Type::Record(_) => format!("arrayOf({var_name}List: {obj_prefix}{field_name}{optional_suffix})"),
-                    Type::Enum(_) => format!("arrayOf({var_name}List: {obj_prefix}{field_name}{optional_suffix})"),
-                    _ => format!("{obj_prefix}{field_name}")
+                    Type::Record(_) => format!(
+                        "arrayOf({var_name}List: {obj_prefix}{field_name}{optional_suffix})"
+                    ),
+                    Type::Enum(_) => format!(
+                        "arrayOf({var_name}List: {obj_prefix}{field_name}{optional_suffix})"
+                    ),
+                    _ => format!("{obj_prefix}{field_name}"),
                 };
                 Ok(as_array_statment)
-            },
+            }
             Type::Map(_, _) => unimplemented!("render_to_map: Map is not implemented"),
             Type::External { .. } => {
                 unimplemented!("render_to_map: External is not implemented")
@@ -126,31 +164,126 @@ pub mod filters {
         res
     }
 
-    pub fn map_type_name(
+    pub fn rn_convert_type(
         t: &TypeIdentifier,
-        ci: &ComponentInterface,
+        converted_var_name: &str,
     ) -> Result<String, askama::Error> {
         match t {
-            Type::Record(_) => Ok("[String: Any?]".into()),
+            Type::Optional(inner) => {
+                let unboxed = inner.as_ref();
+                let optional = match *unboxed {
+                    Type::Int8
+                    | Type::UInt8
+                    | Type::Int16
+                    | Type::UInt16
+                    | Type::Int32
+                    | Type::UInt32
+                    | Type::Int64
+                    | Type::UInt64 => {
+                        format!("{} == 0 ? nil : {}", converted_var_name, converted_var_name)
+                    }
+                    Type::Float32 | Type::Float64 => format!(
+                        "{} == 0.0 ? nil : {}",
+                        converted_var_name, converted_var_name
+                    ),
+                    Type::String => format!(
+                        "{}.isEmpty ? nil : {}",
+                        converted_var_name, converted_var_name
+                    ),
+                    _ => "".to_string(),
+                };
+                Ok(optional.to_string())
+            }
+            _ => Ok(converted_var_name.to_string()),
+        }
+    }
+
+    pub fn rn_return_type(
+        t: &TypeIdentifier,
+        name: &str,
+        optional: bool,
+    ) -> Result<String, askama::Error> {
+        let mut optional_suffix = "";
+        if optional {
+            optional_suffix = "!";
+        }
+        match t {
+            Type::Enum(_) | Type::Record(_) => Ok(format!(
+                "BreezSDKMapper.dictionaryOf({}: res{})",
+                name, optional_suffix
+            )),
+            Type::Sequence(inner) => {
+                let unboxed = inner.as_ref();
+                match unboxed {
+                    Type::Enum(_) | Type::Record(_) => Ok(format!(
+                        "BreezSDKMapper.arrayOf({}List: res{})",
+                        name, optional_suffix
+                    )),
+                    _ => Ok(format!("res{}", optional_suffix)),
+                }
+            }
+            _ => Ok(format!("res{}", optional_suffix)),
+        }
+    }
+
+    pub fn rn_type_name(
+        t: &TypeIdentifier,
+        ci: &ComponentInterface,
+        optional: bool,
+    ) -> Result<String, askama::Error> {
+        let mut optional_suffix = "";
+        if optional {
+            optional_suffix = "?";
+        }
+        match t {
+            Type::Record(_) => Ok(format!("[String: Any{}]", optional_suffix)),
             Type::Enum(inner) => {
                 let enum_def = ci.get_enum_definition(inner).unwrap();
                 match enum_def.is_flat() {
-                    false => Ok("[String: Any?]".into()),
+                    false => Ok(format!("[String: Any{}]", optional_suffix)),
                     true => Ok("String".into()),
                 }
             }
             Type::Optional(inner) => {
                 let unboxed = inner.as_ref();
-                return map_type_name(unboxed, ci);
+                rn_type_name(unboxed, ci, optional)
             }
             Type::Sequence(inner) => {
                 let unboxed = inner.as_ref();
-                Ok(format!("[{}]", map_type_name(unboxed, ci)?))
+                Ok(format!("[{}]", rn_type_name(unboxed, ci, optional)?))
             }
             t => {
                 let name = filters::type_name(t)?;
                 Ok(format!("{name}"))
             }
+        }
+    }
+
+    pub fn extern_type_name(
+        t: &TypeIdentifier,
+        ci: &ComponentInterface,
+    ) -> Result<String, askama::Error> {
+        match t {
+            Type::Int8 | Type::Int16 | Type::Int32 | Type::Int64 => Ok("NSInteger*".to_string()),
+            Type::UInt8 | Type::UInt16 | Type::UInt32 | Type::UInt64 => {
+                Ok("NSUInteger*".to_string())
+            }
+            Type::Float32 | Type::Float64 => Ok("NSNumber*".to_string()),
+            Type::String => Ok("NSString*".to_string()),
+            Type::Enum(inner) => {
+                let enum_def = ci.get_enum_definition(inner).unwrap();
+                match enum_def.is_flat() {
+                    false => Ok("NSDictionary*".to_string()),
+                    true => Ok("NSString*".to_string()),
+                }
+            }
+            Type::Record(_) => Ok("NSDictionary*".to_string()),
+            Type::Optional(inner) => {
+                let unboxed = inner.as_ref();
+                extern_type_name(unboxed, ci)
+            }
+            Type::Sequence(_) => Ok("NSArray*".to_string()),
+            _ => Ok("".to_string()),
         }
     }
 
@@ -164,7 +297,7 @@ pub mod filters {
                 inline_optional_field(unboxed, ci)
             }
             _ => {
-                let mapped_name = filters::map_type_name(t, ci)?;
+                let mapped_name = filters::rn_type_name(t, ci, true)?;
                 let type_name = filters::type_name(t)?;
                 Ok(mapped_name == type_name)
             }
@@ -235,9 +368,15 @@ pub mod filters {
     pub fn unquote(nm: &str) -> Result<String, askama::Error> {
         Ok(nm.trim_matches('`').to_string())
     }
+
+    pub fn ignored_function(nm: &str) -> Result<bool, askama::Error> {
+        Ok(IGNORED_FUNCTIONS.contains(nm))
+    }
+
     pub fn list_arg(nm: &str) -> Result<String, askama::Error> {
         Ok(format!("`{nm}List`"))
     }
+
     pub fn temporary(nm: &str) -> Result<String, askama::Error> {
         Ok(format!("{nm}Tmp"))
     }
