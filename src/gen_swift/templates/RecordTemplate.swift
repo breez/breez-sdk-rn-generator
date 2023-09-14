@@ -36,7 +36,8 @@ static func  as{{ type_name }}List(arr: [Any]) throws -> [{{ type_name }}] {
     var list = [{{ type_name }}]()
     for value in arr {
         if let val = value as? [String: Any?] {
-            list.append(try as{{ type_name }}(data: val))
+            var {{ type_name|var_name|unquote }} = try as{{ type_name }}(data: val)
+            list.append({{ type_name|var_name|unquote }})
         } else { 
             throw SdkError.Generic(message: "Invalid element type {{ type_name }}")
         }
