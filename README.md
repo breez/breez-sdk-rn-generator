@@ -5,7 +5,7 @@ This utility generated the breez-sdk React Native package code.
 ## Prerequisites
 
 ```bash
-brew install ktlint kotlin
+brew install ktlint kotlin swiftformat
 ```
 
 ```bash
