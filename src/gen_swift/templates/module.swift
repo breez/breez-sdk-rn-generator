@@ -24,7 +24,7 @@ class RNBreezSDK: RCTEventEmitter {
     }
     
     override func supportedEvents() -> [String]! {
-        return [BreezSDKListener.emitterName, BreezSDKLogStream.emitterName]
+        return [BreezSDKListener.emitterName, BreezSDKLogStream.emitterName, BreezSDKNodeLogger.emitterName]
     }
     
     @objc
@@ -56,8 +56,8 @@ class RNBreezSDK: RCTEventEmitter {
         }
     }
     
-    @objc(connect:seed:resolve:reject:)
-    func connect(_ config:[String: Any], seed:[UInt8], resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) -> Void {
+    @objc(connect:seed:logFilePath:resolve:reject:)
+    func connect(_ config: [String: Any], seed: [UInt8], logFilePath: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         if self.breezServices != nil {
             reject(RNBreezSDK.TAG, "BreezServices already initialized", nil)
             return
@@ -65,7 +65,8 @@ class RNBreezSDK: RCTEventEmitter {
             
         do {
             let configTmp = try BreezSDKMapper.asConfig(data: config)
-            self.breezServices = try BreezSDK.connect(config: configTmp, seed: seed, listener: BreezSDKListener(emitter: self))                
+            let logFilePathTmp = logFilePath.isEmpty ? nil : logFilePath
+            breezServices = try BreezSDK.connect(config: configTmp, seed: seed, listener: BreezSDKListener(emitter: self), nodeLogger: BreezSDKNodeLogger(emitter: self), logFilePath: logFilePathTmp)             
             resolve(["status": "ok"])
         } catch let err {
             rejectErr(err: err, reject: reject)

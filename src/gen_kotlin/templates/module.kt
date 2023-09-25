@@ -62,7 +62,12 @@ class BreezSDKModule(reactContext: ReactApplicationContext) : ReactContextBaseJa
     }
 
     @ReactMethod
-    fun connect(config: ReadableMap, seed: ReadableArray, promise: Promise) {
+    fun connect(
+        config: ReadableMap,
+        seed: ReadableArray,
+        logFilePath: String,
+        promise: Promise,
+    ) {
         if (breezServices != null) {
             promise.reject(TAG, "BreezServices already initialized")
             return
@@ -71,8 +76,9 @@ class BreezSDKModule(reactContext: ReactApplicationContext) : ReactContextBaseJa
         try {
             val configTmp = asConfig(config) ?: run { throw SdkException.Generic("Missing mandatory field config of type Config") }
             val emitter = reactApplicationContext.getJSModule(RCTDeviceEventEmitter::class.java)
-
-            breezServices = connect(configTmp, asUByteList(seed), BreezSDKListener(emitter))
+            val logFilePathTmp = logFilePath.takeUnless { it.isEmpty() }
+            
+            breezServices = connect(configTmp, asUByteList(seed), BreezSDKListener(emitter), BreezSDKNodeLogger(emitter), logFilePathTmp)
             promise.resolve(readableMapOf("status" to "ok"))
         } catch (e: SdkException) {
             e.printStackTrace()
