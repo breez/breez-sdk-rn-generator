@@ -15,6 +15,7 @@ RCT_EXTERN_METHOD(
 RCT_EXTERN_METHOD(
     connect: (NSDictionary*)config
     seed: (NSArray*)seed
+    logFilePath: (NSString*)logFilePath
     resolve: (RCTPromiseResolveBlock)resolve
     reject: (RCTPromiseRejectBlock)reject
 )

@@ -2,10 +2,14 @@ export type EventListener = (breezEvent: BreezEvent) => void
 
 export type LogStream = (logEntry: LogEntry) => void
 
-export const connect = async (config: Config, seed: number[], listener: EventListener): Promise<EmitterSubscription> => {
+export type Logger = (logMessage: LogMessage) => void
+
+export const connect = async (config: Config, seed: number[], listener: EventListener, nodeLogger: Logger, logFilePath?: string ): Promise<EmitterSubscription> => {
     const subscription = BreezSDKEmitter.addListener("breezSdkEvent", listener)
     
-    await BreezSDK.connect(config, seed)
+    BreezSDKEmitter.addListener("breezSdkNodeLog", nodeLogger)
+
+    await BreezSDK.connect(config, seed, logFilePath)
 
     return subscription
 }
