@@ -1,8 +1,8 @@
 {%- let e = ci.get_enum_definition(name).unwrap() %}
 {%- if e.is_flat() %}
 
-static func  as{{ type_name }}(type: String) throws -> {{ type_name }} {
-    switch(type) {
+static func  as{{ type_name }}({{ type_name|var_name|unquote }}: String) throws -> {{ type_name }} {
+    switch({{ type_name|var_name|unquote }}) {
     {%- for variant in e.variants() %}
 
     case "{{variant.name()|var_name|unquote}}":         
@@ -10,7 +10,7 @@ static func  as{{ type_name }}(type: String) throws -> {{ type_name }} {
 
     {%- endfor %}
     
-    default: throw SdkError.Generic(message: "Invalid variant \(type) for enum {{ type_name }}")
+    default: throw SdkError.Generic(message: "Invalid variant \({{ type_name|var_name|unquote }}) for enum {{ type_name }}")
     }
 }
 
@@ -28,8 +28,8 @@ static func valueOf({{ type_name|var_name|unquote }}: {{ type_name }}) -> String
 
 {%- else %}
 
-static func as{{ type_name }}(data: [String: Any?]) throws -> {{ type_name }} {
-    let type = data["type"] as! String
+static func as{{ type_name }}({{ type_name|var_name|unquote }}: [String: Any?]) throws -> {{ type_name }} {
+    let type = {{ type_name|var_name|unquote }}["type"] as! String
 
     {%- for variant in e.variants() %}
         if (type == "{{ variant.name()|var_name|unquote }}") {
@@ -38,18 +38,18 @@ static func as{{ type_name }}(data: [String: Any?]) throws -> {{ type_name }} {
             {%- match field.type_() %}         
             {%- when Type::Optional(_) %}
                 {% if field.type_()|inline_optional_field(ci) -%}
-                let _{{field.name()|var_name|unquote}} = data["{{field.name()|var_name|unquote}}"] as? {{field.type_()|rn_type_name(ci, true)}}
+                let _{{field.name()|var_name|unquote}} = {{ type_name|var_name|unquote }}["{{field.name()|var_name|unquote}}"] as? {{field.type_()|rn_type_name(ci, true)}}
                 {% else -%}
                 var _{{field.name()|var_name|unquote}}: {{field.type_()|type_name}}
-                if let {{field.name()|var_name|unquote|temporary}} = data["{{field.name()|var_name|unquote}}"] as? {{field.type_()|rn_type_name(ci, true)}} {
+                if let {{field.name()|var_name|unquote|temporary}} = {{ type_name|var_name|unquote }}["{{field.name()|var_name|unquote}}"] as? {{field.type_()|rn_type_name(ci, true)}} {
                     _{{field.name()|var_name|unquote}} = {{field.type_()|render_from_map(ci, field.name()|var_name|unquote|temporary)}}
                 }
                 {% endif -%}
             {%- else %}
             {% if field.type_()|inline_optional_field(ci) -%}
-            guard let _{{field.name()|var_name|unquote}} = data["{{field.name()|var_name|unquote}}"] as? {{field.type_()|rn_type_name(ci, true)}} else { throw SdkError.Generic(message: "Missing mandatory field {{field.name()|var_name|unquote}} for type {{ type_name }}") }
+            guard let _{{field.name()|var_name|unquote}} = {{ type_name|var_name|unquote }}["{{field.name()|var_name|unquote}}"] as? {{field.type_()|rn_type_name(ci, true)}} else { throw SdkError.Generic(message: "Missing mandatory field {{field.name()|var_name|unquote}} for type {{ type_name }}") }
             {%- else -%}
-            guard let {{field.name()|var_name|unquote|temporary}} = data["{{field.name()|var_name|unquote}}"] as? {{field.type_()|rn_type_name(ci, true)}} else { throw SdkError.Generic(message: "Missing mandatory field {{field.name()|var_name|unquote}} for type {{ type_name }}") }
+            guard let {{field.name()|var_name|unquote|temporary}} = {{ type_name|var_name|unquote }}["{{field.name()|var_name|unquote}}"] as? {{field.type_()|rn_type_name(ci, true)}} else { throw SdkError.Generic(message: "Missing mandatory field {{field.name()|var_name|unquote}} for type {{ type_name }}") }
             let _{{field.name()|var_name|unquote}} = {{field.type_()|render_from_map(ci, field.name()|var_name|unquote|temporary)}}
             {% endif -%}        
             {% endmatch %}            

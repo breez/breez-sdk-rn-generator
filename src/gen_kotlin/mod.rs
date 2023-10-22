@@ -178,6 +178,7 @@ pub mod filters {
         t: &TypeIdentifier,
         ci: &ComponentInterface,
         name: &str,
+        field_name: &str,
         optional: bool,
     ) -> Result<String, askama::Error> {
         let mut mandatory_suffix = "";
@@ -185,25 +186,25 @@ pub mod filters {
             mandatory_suffix = "!!"
         }
         let res: String = match t {
-            Type::UInt8 => format!("data.getInt(\"{name}\").toUByte()").into(),
-            Type::Int8 => format!("data.getInt(\"{name}\").toByte()").into(),
-            Type::UInt16 => format!("data.getInt(\"{name}\").toUShort()").into(),
-            Type::Int16 => format!("data.getInt(\"{name}\").toShort()").into(),
-            Type::UInt32 => format!("data.getInt(\"{name}\").toUInt()").into(),
-            Type::Int32 => format!("data.getInt(\"{name}\")").into(),
-            Type::UInt64 => format!("data.getDouble(\"{name}\").toULong()").into(),
-            Type::Int64 => format!("data.getDouble(\"{name}\").toLong()").into(),
-            Type::Float32 => format!("data.getDouble(\"{name}\")").into(),
-            Type::Float64 => format!("data.getDouble(\"{name}\")").into(),
-            Type::Boolean => format!("data.getBoolean(\"{name}\")").into(),
-            Type::String => format!("data.getString(\"{name}\"){mandatory_suffix}").into(),
+            Type::UInt8 => format!("{name}.getInt(\"{field_name}\").toUByte()").into(),
+            Type::Int8 => format!("{name}.getInt(\"{field_name}\").toByte()").into(),
+            Type::UInt16 => format!("{name}.getInt(\"{field_name}\").toUShort()").into(),
+            Type::Int16 => format!("{name}.getInt(\"{field_name}\").toShort()").into(),
+            Type::UInt32 => format!("{name}.getInt(\"{field_name}\").toUInt()").into(),
+            Type::Int32 => format!("{name}.getInt(\"{field_name}\")").into(),
+            Type::UInt64 => format!("{name}.getDouble(\"{field_name}\").toULong()").into(),
+            Type::Int64 => format!("{name}.getDouble(\"{field_name}\").toLong()").into(),
+            Type::Float32 => format!("{name}.getDouble(\"{field_name}\")").into(),
+            Type::Float64 => format!("{name}.getDouble(\"{field_name}\")").into(),
+            Type::Boolean => format!("{name}.getBoolean(\"{field_name}\")").into(),
+            Type::String => format!("{name}.getString(\"{field_name}\"){mandatory_suffix}").into(),
             Type::Timestamp => "".into(),
             Type::Duration => "".into(),
             Type::Object(_) => "".into(),
             Type::Record(_) => {
                 let record_type_name = type_name(t)?;
                 format!(
-                    "data.getMap(\"{name}\")?.let {{ as{record_type_name}(it)}}{mandatory_suffix}"
+                    "{name}.getMap(\"{field_name}\")?.let {{ as{record_type_name}(it)}}{mandatory_suffix}"
                 )
                 .into()
             }
@@ -211,11 +212,11 @@ pub mod filters {
                 let enum_def = ci.get_enum_definition(inner).unwrap();
                 match enum_def.is_flat() {
                     false => {
-                        format!("data.getMap(\"{name}\")?.let {{ as{inner}(it)}}{mandatory_suffix}")
+                        format!("{name}.getMap(\"{field_name}\")?.let {{ as{inner}(it)}}{mandatory_suffix}")
                             .into()
                     }
                     true => format!(
-                        "data.getString(\"{name}\")?.let {{ as{inner}(it)}}{mandatory_suffix}"
+                        "{name}.getString(\"{field_name}\")?.let {{ as{inner}(it)}}{mandatory_suffix}"
                     )
                     .into(),
                 }
@@ -224,13 +225,13 @@ pub mod filters {
             Type::CallbackInterface(_) => "".into(),
             Type::Optional(inner) => {
                 let unboxed = inner.as_ref();
-                let inner_res = render_from_map(unboxed, ci, name, true)?;
-                format!("if (hasNonNullKey(data, \"{name}\")) {inner_res} else null")
+                let inner_res = render_from_map(unboxed, ci, name, field_name, true)?;
+                format!("if (hasNonNullKey({name}, \"{field_name}\")) {inner_res} else null")
             }
             Type::Sequence(inner) => {
                 let unboxed = inner.as_ref();
                 let element_type_name = type_name(unboxed)?;
-                format!("data.getArray(\"{name}\")?.let {{ as{element_type_name}List(it) }}{mandatory_suffix}")
+                format!("{name}.getArray(\"{field_name}\")?.let {{ as{element_type_name}List(it) }}{mandatory_suffix}")
             }
             Type::Map(_, _) => "".into(),
             Type::External { .. } => "".into(),

@@ -327,13 +327,17 @@ pub mod filters {
             Type::Object(_) => "".into(),
             Type::Record(_) => {
                 let record_type_name = type_name(t)?;
-                format!("try as{record_type_name}(data: {map_var_name})")
+                let record_var_name = var_name(&record_type_name)?;
+                let record_unquoted_name = unquote(&record_var_name)?;
+                format!("try as{record_type_name}({record_unquoted_name}: {map_var_name})")
             }
             Type::Enum(inner) => {
                 let enum_def = ci.get_enum_definition(inner).unwrap();
+                let enum_var_name = var_name(&inner)?;
+                let enum_unquoted_name = unquote(&enum_var_name)?;
                 match enum_def.is_flat() {
-                    false => format!("try as{inner}(data: {map_var_name})").into(),
-                    true => format!("try as{inner}(type: {map_var_name})").into(),
+                    false => format!("try as{inner}({enum_unquoted_name}: {map_var_name})").into(),
+                    true => format!("try as{inner}({enum_unquoted_name}: {map_var_name})").into(),
                 }
             }
             Type::Error(_) => "".into(),

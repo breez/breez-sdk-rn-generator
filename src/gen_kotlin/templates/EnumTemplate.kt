@@ -7,13 +7,13 @@ fun as{{ type_name }}(type: String): {{ type_name }} {
 
 {%- else %}
 
-fun as{{ type_name }}(data: ReadableMap): {{ type_name }}? {
-    val type = data.getString("type")
+fun as{{ type_name }}({{ type_name|var_name|unquote }}: ReadableMap): {{ type_name }}? {
+    val type = {{ type_name|var_name|unquote }}.getString("type")
 
     {% for variant in e.variants() -%}
         if (type == "{{ variant.name()|var_name|unquote }}") {
             {% if variant.has_fields() -%}
-            return {{ type_name }}.{{ variant.name() }}( {{ variant.fields()[0].type_()|render_from_map(ci, variant.fields()[0].name()|var_name|unquote, false) }} )                         
+            return {{ type_name }}.{{ variant.name() }}( {{ variant.fields()[0].type_()|render_from_map(ci, type_name|var_name|unquote, variant.fields()[0].name()|var_name|unquote, false) }})                         
             {%- else %}
             return {{ type_name }}.{{ variant.name() }}          
             {%- endif %}       
