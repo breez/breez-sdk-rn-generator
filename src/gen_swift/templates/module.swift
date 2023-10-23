@@ -64,7 +64,7 @@ class RNBreezSDK: RCTEventEmitter {
         }
             
         do {
-            let configTmp = try BreezSDKMapper.asConfig(data: config)
+            let configTmp = try BreezSDKMapper.asConfig(config: config)
             self.breezServices = try BreezSDK.connect(config: configTmp, seed: seed, listener: BreezSDKListener(emitter: self))                
             resolve(["status": "ok"])
         } catch let err {
