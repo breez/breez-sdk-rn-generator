@@ -68,7 +68,7 @@ static func dictionaryOf({{ type_name|var_name|unquote }}: {{ type_name }}) -> [
     {%- for variant in e.variants() %}
     {% if variant.has_fields() %}
     case let .{{ variant.name()|var_name|unquote }}(
-        {% for f in variant.fields() %}{{f.name()|var_name|unquote}}{%- endfor %}
+        {% for f in variant.fields() %}{{f.name()|var_name|unquote}}{%- if !loop.last %}, {% endif -%}{%- endfor %}
     ):
     {% else %}
     case .{{ variant.name()|var_name|unquote }}:  
