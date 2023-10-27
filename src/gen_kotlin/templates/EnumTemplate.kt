@@ -31,7 +31,7 @@ fun readableMapOf({{ type_name|var_name|unquote }}: {{ type_name }}): ReadableMa
         pushToMap(map, "type", "{{ variant.name()|var_name|unquote }}")
         {% for f in variant.fields() -%}
         pushToMap(map, "{{ f.name()|var_name|unquote }}", {{ f.type_()|render_to_map(ci,type_name|var_name|unquote,f.name()|var_name|unquote, false) }})                    
-        {%- endfor %}
+        {% endfor -%}
     }
     {% endfor %}
     }
