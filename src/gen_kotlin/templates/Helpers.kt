@@ -22,7 +22,7 @@ fun pushToArray(array: WritableArray, value: Any?) {
     when (value) {
         null -> array.pushNull()
         {%- for sequence_type in self.sequence_types() %}
-	    is {{ sequence_type }} -> {{sequence_type|render_to_array}}
+	    is {{ sequence_type }} -> {{sequence_type|render_to_array(ci)}}
 	    {%- endfor %}
         is Array<*> -> array.pushArray(readableArrayOf(value.asIterable()))
         is List<*> -> array.pushArray(readableArrayOf(value))

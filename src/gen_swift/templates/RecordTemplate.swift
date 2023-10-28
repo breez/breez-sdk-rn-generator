@@ -1,5 +1,5 @@
 {%- let rec = ci.get_record_definition(name).unwrap() %}
-static func  as{{ type_name }}({{ type_name|var_name|unquote }}: [String: Any?]) throws -> {{ type_name }} {   
+static func as{{ type_name }}({{ type_name|var_name|unquote }}: [String: Any?]) throws -> {{ type_name }} {   
     {%- for field in rec.fields() %}
     {%- match field.type_() %}         
     {%- when Type::Optional(_) %}
@@ -32,7 +32,7 @@ static func  dictionaryOf({{ type_name|var_name|unquote }}: {{ type_name }}) -> 
     ]
 }
 
-static func  as{{ type_name }}List(arr: [Any]) throws -> [{{ type_name }}] {
+static func as{{ type_name }}List(arr: [Any]) throws -> [{{ type_name }}] {
     var list = [{{ type_name }}]()
     for value in arr {
         if let val = value as? [String: Any?] {
