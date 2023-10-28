@@ -39,3 +39,18 @@ fun readableMapOf({{ type_name|var_name|unquote }}: {{ type_name }}): ReadableMa
 }
 
 {%- endif %}
+
+fun as{{ type_name }}List(arr: ReadableArray): List<{{ type_name }}> {
+    val list = ArrayList<{{ type_name }}>()
+    for (value in arr.toArrayList()) {
+        when (value) {
+{%- if e.is_flat() %}
+            is String -> list.add(as{{ type_name }}(value)!!)            
+{%- else %}
+            is ReadableMap -> list.add(as{{ type_name }}(value)!!)            
+{%- endif %}
+            else -> throw IllegalArgumentException("Unexpected type ${value::class.java.name}")
+        }
+    }
+    return list
+}

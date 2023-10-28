@@ -84,7 +84,7 @@ pub mod filters {
         Ok(oracle().fn_name(nm))
     }
 
-    pub fn render_to_array(type_name: &str) -> Result<String, askama::Error> {
+    pub fn render_to_array(type_name: &str, ci: &ComponentInterface) -> Result<String, askama::Error> {
         let res: Result<String, askama::Error> = match type_name {
             "Boolean" => Ok(format!("array.pushBoolean(value)").into()),
             "Double" => Ok(format!("array.pushDouble(value)").into()),
@@ -96,7 +96,21 @@ pub mod filters {
             "UInt" => Ok(format!("array.pushInt(value.toInt())").into()),
             "UShort" => Ok(format!("array.pushInt(value.toInt())").into()),
             "ULong" => Ok(format!("array.pushDouble(value.toDouble())").into()),
-            _ => Ok(format!("array.pushMap(readableMapOf(value))").into()),
+            _ => {
+                match ci.get_type(type_name) {
+                    Some(t) => match t {
+                        Type::Enum(inner) => {
+                            let enum_def = ci.get_enum_definition(&inner).unwrap();
+                            match enum_def.is_flat() {
+                                true => Ok(format!("array.pushString(value.name.lowercase())").into()),
+                                false => Ok(format!("array.pushMap(readableMapOf(value))").into())
+                            }
+                        },
+                        _ => Ok(format!("array.pushMap(readableMapOf(value))").into()),
+                    },
+                    None => unimplemented!("known type: {type_name}")
+                }
+            },
         };
         res
     }

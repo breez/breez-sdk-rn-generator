@@ -351,7 +351,7 @@ pub mod filters {
                 let unboxed = inner.as_ref();
                 let element_type_name = type_name(unboxed)?;
                 match unboxed {
-                    Type::Record(_) => {
+                    Type::Enum(_) | Type::Record(_) => {
                         format!("try as{element_type_name}List(arr: {map_var_name})")
                     }
                     _ => format!("{map_var_name}").into(),
