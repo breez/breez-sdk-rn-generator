@@ -59,7 +59,7 @@ class RNBreezSDK: RCTEventEmitter {
     @objc(connect:seed:resolve:reject:)
     func connect(_ config:[String: Any], seed:[UInt8], resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) -> Void {
         if self.breezServices != nil {
-            reject(RNBreezSDK.TAG, "BreezServices already initialized", nil)
+            reject("Generic", "BreezServices already initialized", nil)
             return
         }
             
@@ -72,17 +72,17 @@ class RNBreezSDK: RCTEventEmitter {
         }
     }
     {%- include "Objects.swift" %}
+    
     func rejectErr(err: Error, reject: @escaping RCTPromiseRejectBlock) {
-        var errorCode = "Generic"
+        var errorName = "Generic"
         var message = "\(err)"
-        if let sdkErr = err as? SdkError {
-            if let sdkErrAssociated = Mirror(reflecting: sdkErr).children.first {
-                if let associatedMessage = Mirror(reflecting: sdkErrAssociated.value).children.first {
-                    message = associatedMessage.value as! String
-                }
+        if let errAssociated = Mirror(reflecting: err).children.first {
+            errorName = errAssociated.label ?? errorName
+            if let associatedMessage = Mirror(reflecting: errAssociated.value).children.first {
+                message = associatedMessage.value as! String
             }
         }
-        reject(errorCode, message, err)
+        reject(errorName, message, err)
     }
 }
 

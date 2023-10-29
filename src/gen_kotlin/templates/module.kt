@@ -7,6 +7,7 @@ import java.io.File
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+{% import "macros.kt" as kt %}
 
 class BreezSDKModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
     private lateinit var executor: ExecutorService
@@ -14,7 +15,6 @@ class BreezSDKModule(reactContext: ReactApplicationContext) : ReactContextBaseJa
 
     companion object {
         const val TAG = "RNBreezSDK"
-        const val GENERIC_CODE = "Generic"
     }
 
     override fun initialize() {
@@ -55,16 +55,16 @@ class BreezSDKModule(reactContext: ReactApplicationContext) : ReactContextBaseJa
 
             setLogStream(BreezSDKLogStream(emitter))
             promise.resolve(readableMapOf("status" to "ok"))
-        } catch (e: SdkException) {
+        } catch (e: Exception) {
             e.printStackTrace()
-            promise.reject(e.javaClass.simpleName, e.message, e)
+            promise.reject(e.javaClass.simpleName.replace("Exception", "Error"), e.message, e)
         }
     }
 
     @ReactMethod
     fun connect(config: ReadableMap, seed: ReadableArray, promise: Promise) {
         if (breezServices != null) {
-            promise.reject(TAG, "BreezServices already initialized")
+            promise.reject("Generic", "BreezServices already initialized")
             return
         }
 
@@ -74,12 +74,11 @@ class BreezSDKModule(reactContext: ReactApplicationContext) : ReactContextBaseJa
 
             breezServices = connect(configTmp, asUByteList(seed), BreezSDKListener(emitter))
             promise.resolve(readableMapOf("status" to "ok"))
-        } catch (e: SdkException) {
+        } catch (e: Exception) {
             e.printStackTrace()
-            promise.reject(e.javaClass.simpleName, e.message, e)
+            promise.reject(e.javaClass.simpleName.replace("Exception", "Error"), e.message, e)
         }
     }
     {%- include "Objects.kt" %}
 }
 
-{% import "macros.kt" as kt %}
