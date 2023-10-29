@@ -64,7 +64,7 @@ static func as{{ type_name }}({{ type_name|var_name|unquote }}: [String: Any?]) 
         }        
     {%- endfor %}    
 
-    throw SdkError.Generic(message: "Invalid enum variant \(type) for enum {{ type_name }}")
+    throw SdkError.Generic(message: "Unexpected type \(type) for enum {{ type_name }}")
 }
 
 static func dictionaryOf({{ type_name|var_name|unquote }}: {{ type_name }}) -> [String: Any?] {    
@@ -104,7 +104,7 @@ static func as{{ type_name }}List(arr: [Any]) throws -> [{{ type_name }}] {
             var {{ type_name|var_name|unquote }} = try as{{ type_name }}({{ type_name|var_name|unquote }}: val)
             list.append({{ type_name|var_name|unquote }})
         } else { 
-            throw NSError(domain: "Unexpected type {{ type_name }}", code: 0)
+            throw SdkError.Generic(message: "Unexpected type {{ type_name }}")
         }
     }
     return list

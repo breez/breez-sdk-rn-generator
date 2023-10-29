@@ -43,7 +43,7 @@ fun as{{ type_name }}List(arr: ReadableArray): List<{{ type_name }}> {
     for (value in arr.toArrayList()) {
         when (value) {
             is ReadableMap -> list.add(as{{ type_name }}(value)!!)            
-            else -> throw IllegalArgumentException("Unsupported type ${value::class.java.name}")
+            else -> throw SdkException.Generic("Unexpected type ${value::class.java.name}")
         }
     }
     return list

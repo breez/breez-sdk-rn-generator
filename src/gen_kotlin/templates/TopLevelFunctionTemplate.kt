@@ -42,8 +42,8 @@
                 {{ obj_interface }}{{ func.name()|fn_name|unquote }}({%- call kt::arg_list(func) -%})
                 promise.resolve(readableMapOf("status" to "ok"))
 {%- endmatch %}
-            } catch (e: SdkException) {
-                promise.reject(e.javaClass.simpleName, e.message, e)
+            } catch (e: Exception) {
+                promise.reject(e.javaClass.simpleName.replace("Exception", "Error"), e.message, e)
             }
         }
     }

@@ -26,7 +26,7 @@ fun pushToArray(array: WritableArray, value: Any?) {
 	    {%- endfor %}
         is Array<*> -> array.pushArray(readableArrayOf(value.asIterable()))
         is List<*> -> array.pushArray(readableArrayOf(value))
-        else -> throw IllegalArgumentException("Unsupported type ${value::class.java.name}")
+        else -> throw SdkException.Generic("Unexpected type ${value::class.java.name}")
     }
 }
 
@@ -47,7 +47,7 @@ fun pushToMap(map: WritableMap, key: String, value: Any?) {
         is ULong -> map.putDouble(key, value.toDouble())
         is Array<*> -> map.putArray(key, readableArrayOf(value.asIterable()))
         is List<*> -> map.putArray(key, readableArrayOf(value))
-        else -> throw IllegalArgumentException("Unsupported value type ${value::class.java.name} for key [$key]")
+        else -> throw SdkException.Generic("Unexpected type ${value::class.java.name} for key [$key]")
     }
 }
 
@@ -69,7 +69,7 @@ fun asUByteList(arr: ReadableArray): List<UByte> {
             is Double -> list.add(value.toInt().toUByte())
             is Int -> list.add(value.toUByte())
             is UByte -> list.add(value)
-            else -> throw IllegalArgumentException("Unsupported type ${value::class.java.name}")
+            else -> throw SdkException.Generic("Unexpected type ${value::class.java.name}")
         }
     }
     return list

@@ -39,7 +39,7 @@ static func as{{ type_name }}List(arr: [Any]) throws -> [{{ type_name }}] {
             var {{ type_name|var_name|unquote }} = try as{{ type_name }}({{ type_name|var_name|unquote }}: val)
             list.append({{ type_name|var_name|unquote }})
         } else { 
-            throw SdkError.Generic(message: "Invalid element type {{ type_name }}")
+            throw SdkError.Generic(message: "Unexpected type {{ type_name }}")
         }
     }
     return list
