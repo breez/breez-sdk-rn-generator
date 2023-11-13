@@ -22,7 +22,7 @@
 {%- when Some with (return_type) %}
             var res = {%- call swift::throws_decl(func) -%}{{ obj_interface }}{{ func.name()|fn_name|unquote }}({%- call swift::arg_list(func) -%})
 {%- if func.name() == "default_config" %}
-            res.workingDir = RNBreezSDK.breezSdkDirectory.path                
+            res.workingDir = RNBreezSDK.breezSdkDirectory.path
 {%- endif -%}
     {%- match return_type %}
     {%- when Type::Optional(inner) %}
@@ -37,6 +37,9 @@
     {%- endmatch %}
 {%- when None %}
             try {{ obj_interface }}{{ func.name()|fn_name|unquote }}({%- call swift::arg_list(func) -%})
+{%- if func.name() == "disconnect" %}
+            breezServices = nil
+{%- endif %}
             resolve(["status": "ok"])     
 {%- endmatch %}
         } catch let err {
