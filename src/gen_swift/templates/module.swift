@@ -6,19 +6,16 @@ class RNBreezSDK: RCTEventEmitter {
     static let TAG: String = "BreezSDK"
     
     private var breezServices: BlockingBreezServices!
-    
-    static var applicationDirectory: URL {
-      return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-    }
 
     static var breezSdkDirectory: URL {
-      let breezSdkDirectory = applicationDirectory.appendingPathComponent("breezSdk", isDirectory: true)
-      
-      if !FileManager.default.fileExists(atPath: breezSdkDirectory.path) {
-        try! FileManager.default.createDirectory(atPath: breezSdkDirectory.path, withIntermediateDirectories: true)
-      }
-      
-      return breezSdkDirectory
+        let applicationDirectory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let breezSdkDirectory = applicationDirectory.appendingPathComponent("breezSdk", isDirectory: true)
+        
+        if !FileManager.default.fileExists(atPath: breezSdkDirectory.path) {
+            try! FileManager.default.createDirectory(atPath: breezSdkDirectory.path, withIntermediateDirectories: true)
+        }
+        
+        return breezSdkDirectory
     }
     
     @objc
