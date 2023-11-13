@@ -2,7 +2,7 @@
 import Foundation
 import BreezSDK
 
-class BreezSDKMapper {
+enum BreezSDKMapper {
 
 {%- include "Types.swift" %}
 
