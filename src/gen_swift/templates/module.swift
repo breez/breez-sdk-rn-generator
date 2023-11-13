@@ -7,8 +7,11 @@ class RNBreezSDK: RCTEventEmitter {
     
     private var breezServices: BlockingBreezServices!
     
+    static var applicationDirectory: URL {
+      return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+    }
+
     static var breezSdkDirectory: URL {
-      let applicationDirectory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
       let breezSdkDirectory = applicationDirectory.appendingPathComponent("breezSdk", isDirectory: true)
       
       if !FileManager.default.fileExists(atPath: breezSdkDirectory.path) {
@@ -39,6 +42,16 @@ class RNBreezSDK: RCTEventEmitter {
         
         throw SdkError.Generic(message: "BreezServices not initialized")
     }
+    
+    private func ensureWorkingDir(workingDir: String) throws {
+        do {
+            if !FileManager.default.fileExists(atPath: workingDir) {
+                try FileManager.default.createDirectory(atPath: workingDir, withIntermediateDirectories: true)
+            }
+        } catch {
+            throw SdkError.Generic(message: "Mandatory field workingDir must contain a writable directory")
+        }
+    }
 
     {% let obj_interface = "BreezSDK." -%}
     {% for func in ci.function_definitions() %}
@@ -65,6 +78,9 @@ class RNBreezSDK: RCTEventEmitter {
             
         do {
             let configTmp = try BreezSDKMapper.asConfig(config: config)
+
+            try ensureWorkingDir(workingDir: configTmp.workingDir)
+
             self.breezServices = try BreezSDK.connect(config: configTmp, seed: seed, listener: BreezSDKListener(emitter: self))                
             resolve(["status": "ok"])
         } catch let err {

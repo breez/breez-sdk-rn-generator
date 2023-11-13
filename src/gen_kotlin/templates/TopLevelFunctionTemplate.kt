@@ -22,12 +22,8 @@
 {%- match func.return_type() -%}
 {%- when Some with (return_type) %}
                 val res = {{ obj_interface }}{{ func.name()|fn_name|unquote }}({%- call kt::arg_list(func) -%})
- {%- if func.name() == "default_config" %}
+{%- if func.name() == "default_config" %}
                 val workingDir = File(reactApplicationContext.filesDir.toString() + "/breezSdk")
-
-                if (!workingDir.exists()) {
-                    workingDir.mkdirs()
-                }
 
                 res.workingDir = workingDir.absolutePath
 {%- endif -%}               
@@ -40,6 +36,9 @@
     {%- endmatch %}
 {%- when None %}
                 {{ obj_interface }}{{ func.name()|fn_name|unquote }}({%- call kt::arg_list(func) -%})
+{%- if func.name() == "disconnect" %}
+                breezServices = null
+{%- endif %}               
                 promise.resolve(readableMapOf("status" to "ok"))
 {%- endmatch %}
             } catch (e: Exception) {
