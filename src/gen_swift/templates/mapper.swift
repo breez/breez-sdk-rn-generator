@@ -6,4 +6,6 @@ enum BreezSDKMapper {
 
 {%- include "Types.swift" %}
 
+{%- include "Helpers.swift" %}
+
 }

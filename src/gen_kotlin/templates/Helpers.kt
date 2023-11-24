@@ -26,7 +26,7 @@ fun pushToArray(array: WritableArray, value: Any?) {
 	    {%- endfor %}
         is Array<*> -> array.pushArray(readableArrayOf(value.asIterable()))
         is List<*> -> array.pushArray(readableArrayOf(value))
-        else -> throw SdkException.Generic("Unexpected type ${value::class.java.name}")
+        else -> throw SdkException.Generic(errUnexpectedType("${value::class.java.name}"))
     }
 }
 
@@ -69,7 +69,7 @@ fun asUByteList(arr: ReadableArray): List<UByte> {
             is Double -> list.add(value.toInt().toUByte())
             is Int -> list.add(value.toUByte())
             is UByte -> list.add(value)
-            else -> throw SdkException.Generic("Unexpected type ${value::class.java.name}")
+            else -> throw SdkException.Generic(errUnexpectedType("${value::class.java.name}"))
         }
     }
     return list
@@ -81,4 +81,16 @@ fun asStringList(arr: ReadableArray): List<String> {
         list.add(value.toString())
     }
     return list
+}
+
+fun errMissingMandatoryField(fieldName: String, typeName: String): String {
+        return "Missing mandatory field ${fieldName} for type ${typeName}"
+    }
+
+fun errUnexpectedType(typeName: String): String {
+        return "Unexpected type ${typeName}"
+    }
+
+fun errUnexpectedValue(fieldName: String): String {
+    return "Unexpected value for optional field ${fieldName}"
 }
