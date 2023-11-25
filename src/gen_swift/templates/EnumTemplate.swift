@@ -51,9 +51,13 @@ static func as{{ type_name }}({{ type_name|var_name|unquote }}: [String: Any?]) 
                 {% endif -%}
             {%- else %}
             {% if field.type_()|inline_optional_field(ci) -%}
-            guard let _{{field.name()|var_name|unquote}} = {{ type_name|var_name|unquote }}["{{field.name()|var_name|unquote}}"] as? {{field.type_()|rn_type_name(ci, true)}} else { throw SdkError.Generic(message: "Missing mandatory field {{field.name()|var_name|unquote}} for type {{ type_name }}") }
+            guard let _{{field.name()|var_name|unquote}} = {{ type_name|var_name|unquote }}["{{field.name()|var_name|unquote}}"] as? {{field.type_()|rn_type_name(ci, true)}} else {
+                throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "{{field.name()|var_name|unquote}}", typeName: "{{ type_name }}"))
+            }
             {%- else -%}
-            guard let {{field.name()|var_name|unquote|temporary}} = {{ type_name|var_name|unquote }}["{{field.name()|var_name|unquote}}"] as? {{field.type_()|rn_type_name(ci, true)}} else { throw SdkError.Generic(message: "Missing mandatory field {{field.name()|var_name|unquote}} for type {{ type_name }}") }
+            guard let {{field.name()|var_name|unquote|temporary}} = {{ type_name|var_name|unquote }}["{{field.name()|var_name|unquote}}"] as? {{field.type_()|rn_type_name(ci, true)}} else {
+                throw SdkError.Generic(message: errMissingMandatoryField(fieldName: "{{field.name()|var_name|unquote}}", typeName: "{{ type_name }}"))
+            }
             let _{{field.name()|var_name|unquote}} = {{field.type_()|render_from_map(ci, field.name()|var_name|unquote|temporary)}}
             {% endif -%}        
             {% endmatch %}            
@@ -104,7 +108,7 @@ static func as{{ type_name }}List(arr: [Any]) throws -> [{{ type_name }}] {
             var {{ type_name|var_name|unquote }} = try as{{ type_name }}({{ type_name|var_name|unquote }}: val)
             list.append({{ type_name|var_name|unquote }})
         } else { 
-            throw SdkError.Generic(message: "Unexpected type {{ type_name }}")
+            throw SdkError.Generic(message: errUnexpectedType(typeName: "{{ type_name }}"))
         }
     }
     return list

@@ -82,7 +82,7 @@ class BreezSDKModule(reactContext: ReactApplicationContext) : ReactContextBaseJa
         }
 
         try {
-            val configTmp = asConfig(config) ?: run { throw SdkException.Generic("Missing mandatory field config of type Config") }
+            val configTmp = asConfig(config) ?: run { throw SdkException.Generic(errMissingMandatoryField("config", "Config")) }
             val emitter = reactApplicationContext.getJSModule(RCTDeviceEventEmitter::class.java)
 
             ensureWorkingDir(configTmp.workingDir)
