@@ -6,8 +6,6 @@ use once_cell::sync::Lazy;
 use uniffi_bindgen::backend::{CodeOracle, CodeType, TypeIdentifier};
 use uniffi_bindgen::interface::*;
 
-pub use uniffi_bindgen::bindings::kotlin::gen_kotlin::*;
-
 use crate::generator::RNConfig;
 
 mod callback_interface;
