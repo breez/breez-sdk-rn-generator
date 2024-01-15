@@ -5,6 +5,8 @@ import BreezSDK
 class RNBreezSDK: RCTEventEmitter {
     static let TAG: String = "BreezSDK"
     
+    public static var emitter: RCTEventEmitter!
+    
     private var breezServices: BlockingBreezServices!
 
     static var breezSdkDirectory: URL {
@@ -18,6 +20,11 @@ class RNBreezSDK: RCTEventEmitter {
         return breezSdkDirectory
     }
     
+    override init() {
+        super.init()
+        RNBreezSDK.emitter = self
+    }
+
     @objc
     override static func moduleName() -> String! {
         TAG
@@ -59,7 +66,7 @@ class RNBreezSDK: RCTEventEmitter {
     @objc(setLogStream:reject:)
     func setLogStream(_ resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) -> Void {
         do {
-            try BreezSDK.setLogStream(logStream: BreezSDKLogStream(emitter: self))            
+            try BreezSDK.setLogStream(logStream: BreezSDKLogStream())            
             resolve(["status": "ok"])        
         } catch let err {
             rejectErr(err: err, reject: reject)
@@ -78,7 +85,7 @@ class RNBreezSDK: RCTEventEmitter {
 
             try ensureWorkingDir(workingDir: configTmp.workingDir)
 
-            self.breezServices = try BreezSDK.connect(config: configTmp, seed: seed, listener: BreezSDKListener(emitter: self))                
+            self.breezServices = try BreezSDK.connect(config: configTmp, seed: seed, listener: BreezSDKListener())                
             resolve(["status": "ok"])
         } catch let err {
             rejectErr(err: err, reject: reject)
