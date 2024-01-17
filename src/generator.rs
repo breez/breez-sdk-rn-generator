@@ -22,7 +22,7 @@ impl RNBindingGenerator {
         output_path: &Utf8Path,
         file_name: &Utf8Path,
     ) -> Result<Utf8PathBuf> {
-        fs::create_dir_all(output_path.clone())?;
+        fs::create_dir_all(output_path)?;
         let bindings_path: camino::Utf8PathBuf = output_path.join(file_name);
         let mut f: File = File::create(&bindings_path)?;
         write!(f, "{}", bindings_output)?;

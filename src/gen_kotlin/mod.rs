@@ -80,10 +80,6 @@ pub mod filters {
         Ok(codetype.type_label(oracle()))
     }
 
-    pub fn error_name(nm: &str) -> Result<String, askama::Error> {
-        Ok(oracle().error_name(nm))
-    }
-
     pub fn fn_name(nm: &str) -> Result<String, askama::Error> {
         Ok(oracle().fn_name(nm))
     }
