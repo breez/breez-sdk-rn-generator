@@ -73,19 +73,18 @@ class RNBreezSDK: RCTEventEmitter {
         }
     }
     
-    @objc(connect:seed:resolve:reject:)
-    func connect(_ config:[String: Any], seed:[UInt8], resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) -> Void {
+    @objc(connect:resolve:reject:)
+    func connect(_ req:[String: Any], resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) -> Void {
         if self.breezServices != nil {
             reject("Generic", "BreezServices already initialized", nil)
             return
         }
             
         do {
-            let configTmp = try BreezSDKMapper.asConfig(config: config)
+            let connectRequest = try BreezSDKMapper.asConnectRequest(connectRequest: req)
+            try ensureWorkingDir(workingDir: connectRequest.config.workingDir)
 
-            try ensureWorkingDir(workingDir: configTmp.workingDir)
-
-            self.breezServices = try BreezSDK.connect(config: configTmp, seed: seed, listener: BreezSDKListener())                
+            self.breezServices = try BreezSDK.connect(req: connectRequest, listener: BreezSDKListener())                
             resolve(["status": "ok"])
         } catch let err {
             rejectErr(err: err, reject: reject)
