@@ -6,7 +6,8 @@ class RNBreezSDK: RCTEventEmitter {
     static let TAG: String = "BreezSDK"
     
     public static var emitter: RCTEventEmitter!
-    
+    public static var hasListeners: Bool = false
+
     private var breezServices: BlockingBreezServices!
 
     static var breezSdkDirectory: URL {
@@ -32,6 +33,14 @@ class RNBreezSDK: RCTEventEmitter {
     
     override func supportedEvents() -> [String]! {
         return [BreezSDKListener.emitterName, BreezSDKLogStream.emitterName]
+    }
+    
+    override func startObserving() {
+        RNBreezSDK.hasListeners = true
+    }
+    
+    override func stopObserving() {
+        RNBreezSDK.hasListeners = false
     }
     
     @objc
